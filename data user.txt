@@ -1,0 +1,26 @@
+"nama" : "suhartini",
+"jenis_kelamin": false,
+"alamat": "Jl kendari",
+"email": "suhartini@gmail.com",
+"tanggal_lahir": "1995-01-19",
+"password" : "123",
+"password_validation": "123"
+
+
+"role": "ahli_gizi",
+"nama": "kiki",
+"jenis_kelamin": true,
+"alamat": "Yogyakarta",
+"tanggal_lahir": "1998-08-27",
+"email" : "kiki@gmail.com",
+"password" : "123",
+"password_validation" : "123"
+
+
+"nama" : "suhartono",
+"jenis_kelamin": false,
+"alamat": "Jl kendari",
+"email": "suhartono@gmail.com",
+"tanggal_lahir": "1995-01-19",
+"password" : "123",
+"password_validation": "123"

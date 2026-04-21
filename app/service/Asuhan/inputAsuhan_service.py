@@ -1,12 +1,9 @@
-import datetime
-
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.models import Parameter, RekamPasienParameter
 from app.models.diagnosa_pasien import DiagnosaPasien
 from app.models.opsi_parameter import OpsiParameter
-from app.schemas.rekam_pasien_parameter_schema import rekamPasienParameterRequest
 
 def get_parameter_input_service(
     db:Session
@@ -93,31 +90,63 @@ def saveDiagnosaPasienService(
     items
 ):
     existing = db.query(DiagnosaPasien).filter(
-        DiagnosaPasien.rekam_pasien_id == rekam_pasien_id,
+        DiagnosaPasien.id_rekam_pasien == rekam_pasien_id,
         DiagnosaPasien.deleted_at.is_(None)
     ).all()
     
     existing_map = {d.id: d for d in existing}
     
-    incoming_ids = {item.id for item in items if item.id is not None}
+    incoming_ids = {
+        item.id for item in items
+        if getattr(item, "id", None) is not None
+    }
     
     for d in existing:
         if d.id not in incoming_ids:
-            d.deleted_at = datetime.utcnow()
+            d.deleted_at = func.now()
             
-    # 🔄 UPSERT
+
     for item in items:
         if item.id is not None:
             if item.id in existing_map:
                 diagnosa = existing_map[item.id]
-                diagnosa.diagnosa_id = item.diagnosa_id
+                diagnosa.diagnosa_id = item.id_diagnosa
             else:
                 continue
         else:
             db.add(DiagnosaPasien(
-                rekam_pasien_id=rekam_pasien_id,
-                diagnosa_id=item.diagnosa_id
+                id_rekam_pasien=rekam_pasien_id,
+                id_diagnosa=item.id_diagnosa
             ))
     
     db.commit()
-    return items
+    
+    result = (
+    db.query(DiagnosaPasien)
+        .filter(
+            DiagnosaPasien.id_rekam_pasien == rekam_pasien_id,
+            DiagnosaPasien.deleted_at.is_(None)
+        )
+        .all()
+    )
+
+    return result
+
+def getDiagnosaPasienService(
+    db: Session,
+    rekam_pasien_id: int
+):
+    query = (
+        db.query(DiagnosaPasien)
+        .filter(
+            DiagnosaPasien.id_rekam_pasien == rekam_pasien_id,
+            DiagnosaPasien.deleted_at.is_(None)
+        )
+        .all()
+    )
+    
+    if not query:
+        raise HTTPException(status_code=404, detail="Diagnosa pasien not found")
+
+    return query
+

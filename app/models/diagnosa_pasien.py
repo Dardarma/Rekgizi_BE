@@ -8,8 +8,8 @@ class DiagnosaPasien(Base):
     __tablename__ = "diagnosa_pasien"
 
     id = Column(Integer, primary_key=True, index=True)
-    rekam_pasien_id = Column(Integer, ForeignKey('rekam_pasien.id'), nullable=False)
-    diagnosa_id = Column(Integer, ForeignKey('diagnosa.id'), nullable=False)
+    id_rekam_pasien = Column(Integer, ForeignKey('rekam_pasien.id'), nullable=False)
+    id_diagnosa = Column(Integer, ForeignKey('diagnosa.id'), nullable=False)
 
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), nullable=True, server_default=func.now(), onupdate=func.now())

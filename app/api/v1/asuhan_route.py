@@ -4,12 +4,15 @@ from typing import List
 from app.core.database import SessionLocal
 from app.core.require_role import require_role
 from app.models.users import RoleEnum
+from app.schemas.diagnosa_pasien_schema import APIResponseDiagnosaPasien, diagnosaRequest
 from app.schemas.diagnosa_schema import APIResponsediagnosa
 from app.schemas.parameter_schema import ParameterWithOpsi
 from app.schemas.rekam_pasien_parameter_schema import rekamPasienParameterRequest, rekamPasienParmeterResponse
+from app.schemas.rekam_pasien_schema import RekamPasienBase
 from app.schemas.userSchema import UserBasicInfo, UserSearchRequest, userResponseAPI
-from app.service.Asuhan.inputAsuhan import get_parameter_input_service, getRekamPasienParameterService, saveParameterPasien
+from app.service.Asuhan.inputAsuhan_service import get_parameter_input_service, getDiagnosaPasienService, getRekamPasienParameterService, saveDiagnosaPasienService, saveParameterPasien
 from app.service.master.diagnosa_service import get_diagnosa_service
+from app.service.master.rekam_pasien_service import get_rekam_pasien_by_id_service
 from app.service.user_service import get_all_users, get_user_by_id
 from app.utils.helpers.respons import APIResponse
 
@@ -108,3 +111,34 @@ def getRekamPasienParameter(
         data=rekam_pasien_parameter
     )
 
+@router.get("/diagnosa-pasien/{rekam_pasien_id}", response_model=APIResponseDiagnosaPasien, summary="get diagnosa pasien by rekam pasien id")
+def getDiagnosaPasien(
+    rekam_pasien_id: int,
+    db:Session = Depends(get_db),
+    _: None = Depends(require_role(RoleEnum.ahli_gizi,RoleEnum.tenaga_kesehatan)),
+):
+    diagnosa_pasien = getDiagnosaPasienService(db,rekam_pasien_id)
+    
+    return APIResponse(
+        status_code=200,
+        message="succes",
+        data=diagnosa_pasien
+    )
+
+@router.post("/diagnosa-pasien/{rekam_pasien_id}", response_model=APIResponseDiagnosaPasien, summary="post and put diagnosa pasien")
+def saveDiagnosaPasien(
+    rekam_pasien_id: int,
+    data: diagnosaRequest,
+    db:Session = Depends(get_db),
+):
+    result = saveDiagnosaPasienService(db,rekam_pasien_id,data.data)
+    
+    return APIResponse(
+        status_code=200,
+        message="succes",
+        data=result
+    )
+    
+
+
+    

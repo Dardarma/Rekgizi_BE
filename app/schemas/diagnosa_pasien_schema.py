@@ -4,14 +4,20 @@ from pydantic import BaseModel
 
 class diagnosaPasienBasic(BaseModel):
     id: int
-    diagnosa_id: int
-    rekam_pasien_id: int
+    id_diagnosa: int 
+    id_rekam_pasien: int
     
 class DiagnosaItem(BaseModel):
     id: Optional[int] = None   
-    diagnosa_id: int 
+    id_diagnosa: int 
     
 class diagnosaRequest(BaseModel):
-    rekam_pasien_id: int
     data: list[DiagnosaItem]
+    
+class APIResponseDiagnosaPasien(BaseModel):
+    status_code: int
+    message : str
+    data : list[diagnosaPasienBasic]
+
+
     

@@ -29,13 +29,8 @@ def get_rekam_pasien_by_user_service(
             "id": rp.id,
             "pasien_id": rp.pasien_id,
             "nama_pasien": nama_pasien,
-            "tanggal_assesmen": rp.tanggal_asesmen,
+            "tanggal_asesmen": rp.tanggal_asesmen,
             "status": rp.status,
-            "intervensi_id": rp.intervensi_id,
-            "tujuan_intervensi": rp.tujuan_intervensi,
-            "prinsip_intervensi": rp.prinsip_intervensi,
-            "edukasi_intervensi": rp.edukasi_intervensi,
-            "rencana_diet_intervensi": rp.rencana_diet_intervensi,
         })
     
     return result
@@ -64,13 +59,8 @@ def get_rekam_pasien_me_service(
             "id": rp.id,
             "pasien_id": rp.pasien_id,
             "nama_pasien": nama_pasien,
-            "tanggal_assesmen": rp.tanggal_asesmen,
+            "tanggal_asesmen": rp.tanggal_asesmen,
             "status": rp.status,
-            "intervensi_id": rp.intervensi_id,
-            "tujuan_intervensi": rp.tujuan_intervensi,
-            "prinsip_intervensi": rp.prinsip_intervensi,
-            "edukasi_intervensi": rp.edukasi_intervensi,
-            "rencana_diet_intervensi": rp.rencana_diet_intervensi,
         })
 
     return result
@@ -82,20 +72,11 @@ def get_rekam_pasien_by_id_service(
     rekam_pasien_id: int = None,
 ):
     rekam_pasien = (
-        db.query(RekamPasien,
-         User.nama.label("nama_pasien")        
-        )
-        .join(User, RekamPasien.pasien_id == User.id)
+        db.query(RekamPasien)
         .filter(
             RekamPasien.id == rekam_pasien_id,
             RekamPasien.deleted_at.is_(None)
         )
-        .all()
-    )
-    
-    rekam_pasien = (
-        db.query(RekamPasien)
-        .filter(RekamPasien.deleted_at.is_(None))
         .first()
     )
 
@@ -108,17 +89,19 @@ def get_rekam_pasien_by_id_service(
     
     nama_pasien = rekam_pasien.pasien.nama
 
-    return{
-        "id": rekam_pasien.id,
-        "pasien_id": rekam_pasien.pasien_id,
-        "nama_pasien": nama_pasien,
-        "tanggal_assesmen": rekam_pasien.tanggal_asesmen,
-        "status": rekam_pasien.status,
-        "intervensi_id": rekam_pasien.intervensi_id,
-        "tujuan_intervensi": rekam_pasien.tujuan_intervensi,
-        "prinsip_intervensi": rekam_pasien.prinsip_intervensi,
-        "edukasi_intervensi": rekam_pasien.edukasi_intervensi,
-        "rencana_diet_intervensi": rekam_pasien.rencana_diet_intervensi,
+    return {
+    "id": rekam_pasien.id,
+    "pasien_id": rekam_pasien.pasien_id,
+    "nama_pasien": rekam_pasien.pasien.nama if rekam_pasien.pasien else None,
+    "tanggal_asesmen": rekam_pasien.tanggal_asesmen,
+    "status": rekam_pasien.status,
+    "intervensi_id": rekam_pasien.intervensi_id,
+    "tujuan_intervensi": rekam_pasien.tujuan_intervensi,
+    "prinsip_intervensi": rekam_pasien.prinsip_intervensi,
+    "edukasi_intervensi": rekam_pasien.edukasi_intervensi,
+    "karbohidrat": rekam_pasien.karbohidrat,
+    "protein": rekam_pasien.protein,
+    "energi": rekam_pasien.energi,
     }
 
 def post_rekam_pasien_service(
@@ -138,7 +121,7 @@ def post_rekam_pasien_service(
     
     new_rekam_pasien = RekamPasien(
         pasien_id=payload.pasien_id,
-        tanggal_asesmen=payload.tanggal_assesmen,
+        tanggal_asesmen=payload.tanggal_asesmen,
         status=payload.status,
         intervensi_id=payload.intervensi_id,
         tujuan_intervensi=payload.tujuan_intervensi,
@@ -155,13 +138,8 @@ def post_rekam_pasien_service(
         "id": new_rekam_pasien.id,
         "pasien_id": new_rekam_pasien.pasien_id,
         "nama_pasien": pasien.nama,
-        "tanggal_assesmen": new_rekam_pasien.tanggal_asesmen,
+        "tanggal_asesmen": new_rekam_pasien.tanggal_asesmen,
         "status": new_rekam_pasien.status,
-        "intervensi_id": new_rekam_pasien.intervensi_id,
-        "tujuan_intervensi": new_rekam_pasien.tujuan_intervensi,
-        "prinsip_intervensi": new_rekam_pasien.prinsip_intervensi,
-        "edukasi_intervensi": new_rekam_pasien.edukasi_intervensi,
-        "rencana_diet_intervensi": new_rekam_pasien.rencana_diet_intervensi,
     }
 
 def update_rekam_pasien_service(
@@ -180,13 +158,8 @@ def update_rekam_pasien_service(
         raise HTTPException(status_code=404, detail="Rekam pasien not found")
 
     rekam_pasien.pasien_id = payload.pasien_id
-    rekam_pasien.tanggal_asesmen = payload.tanggal_assesmen
+    rekam_pasien.tanggal_asesmen = payload.tanggal_asesmen
     rekam_pasien.status = payload.status
-    rekam_pasien.intervensi_id = payload.intervensi_id
-    rekam_pasien.tujuan_intervensi = payload.tujuan_intervensi
-    rekam_pasien.prinsip_intervensi = payload.prinsip_intervensi
-    rekam_pasien.edukasi_intervensi = payload.edukasi_intervensi
-    rekam_pasien.rencana_diet_intervensi = payload.rencana_diet_intervensi
 
     db.commit()
     db.refresh(rekam_pasien)
@@ -197,13 +170,8 @@ def update_rekam_pasien_service(
         "id": rekam_pasien.id,
         "pasien_id": rekam_pasien.pasien_id,
         "nama_pasien": nama_pasien,
-        "tanggal_assesmen": rekam_pasien.tanggal_asesmen,
+        "tanggal_asesmen": rekam_pasien.tanggal_asesmen,
         "status": rekam_pasien.status,
-        "intervensi_id": rekam_pasien.intervensi_id,
-        "tujuan_intervensi": rekam_pasien.tujuan_intervensi,
-        "prinsip_intervensi": rekam_pasien.prinsip_intervensi,
-        "edukasi_intervensi": rekam_pasien.edukasi_intervensi,
-        "rencana_diet_intervensi": rekam_pasien.rencana_diet_intervensi,
     }
 
 def delete_rekam_pasien_service(
@@ -228,11 +196,6 @@ def delete_rekam_pasien_service(
         "id": rekam_pasien.id,
         "pasien_id": rekam_pasien.pasien_id,
         "nama_pasien": nama_pasien,
-        "tanggal_assesmen": rekam_pasien.tanggal_asesmen,
+        "tanggal_asesmen": rekam_pasien.tanggal_asesmen,
         "status": rekam_pasien.status,
-        "intervensi_id": rekam_pasien.intervensi_id,
-        "tujuan_intervensi": rekam_pasien.tujuan_intervensi,
-        "prinsip_intervensi": rekam_pasien.prinsip_intervensi,
-        "edukasi_intervensi": rekam_pasien.edukasi_intervensi,
-        "rencana_diet_intervensi": rekam_pasien.rencana_diet_intervensi,
     }

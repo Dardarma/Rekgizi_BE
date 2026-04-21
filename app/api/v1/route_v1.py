@@ -10,6 +10,7 @@ from app.api.v1.opsi_parameter_route import router as opsi_parameter_router
 from app.api.v1.article_route import router as article_router
 from app.api.v1.intervensi_route import router as intervensi_router
 from app.api.v1.diagnosa_route import router as diagnosa_router
+from app.api.v1.asuhan_intervensi import router as asuhan_intervensi_router
 
 
 v1_router = [
@@ -24,5 +25,6 @@ v1_router = [
     article_router,
     intervensi_router,
     diagnosa_router,
-    asuhan_router
+    asuhan_router,
+    asuhan_intervensi_router
 ]

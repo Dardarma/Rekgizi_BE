@@ -1,3 +1,5 @@
+from math import ceil
+
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -43,7 +45,7 @@ def get_article_service(
         .limit(limit)
         .all()
     )
-
+    total_page = ceil(total / limit) if limit > 0 else 1
     result = []
     for art, nama_pembuat in articles:
         result.append({
@@ -53,6 +55,7 @@ def get_article_service(
             "judul": art.judul,
             "konten": art.konten,
             "is_published": art.is_published,
+            "tanggal": art.created_at.date()
         })
 
     return {
@@ -61,7 +64,7 @@ def get_article_service(
             "current_page": current_page,
             "limit": limit,
             "total": total,
-            "total_current_pages": (total + limit - 1) 
+            "total_pages": total_page
         }
     }
 
@@ -91,6 +94,7 @@ def get_article_by_id_service(
         "judul": art.judul,
         "konten": art.konten,
         "is_published": art.is_published,
+        "tanggal": art.created_at.date()
     }
 
 def create_article_service(

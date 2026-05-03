@@ -4,6 +4,8 @@ from app.utils.helpers.exception import register_exception_handlers
 from app.api.v1.route_v1 import v1_router
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+import sys
+print("PYTHON USED:", sys.executable)
 
 load_dotenv()
 

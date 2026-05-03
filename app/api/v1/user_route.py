@@ -34,7 +34,9 @@ def get_asuhan_search(
     )
 
 @router.get("/{user_id}", response_model=APIResponse[UserBasicInfo], summary="Get user info by ID")
-def get_user(user_id: int, db: Session = Depends(get_db),_: None = Depends(require_role(RoleEnum.admin))):
+def get_user(user_id: int, 
+             db: Session = Depends(get_db),
+             _: None = Depends(require_role(RoleEnum.admin))):
 	user = get_user_by_id(user_id, db)
 	return APIResponse(
 		status_code=200, 

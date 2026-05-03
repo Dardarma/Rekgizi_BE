@@ -8,7 +8,7 @@ from app.models.users import RoleEnum
 from app.schemas.intervensi_schema import APIResponseIntervensi
 from app.schemas.rekam_pasien_schema import APIRekamPasien, IntervensiRekamPasienRequest
 from app.schemas.summary_schema import RekamPasienSummaryResponse
-from app.service.Asuhan.intervensi_asuhan import get_rekam_pasien_summary, map_to_summary, putIntervensiPasienService
+from app.service.Asuhan.intervensi_asuhan import get_rekam_pasien_summary, map_to_summary, prediksiIntervensi, putIntervensiPasienService
 from app.service.master.intervensi_service import get_intervensi_service
 from app.utils.helpers.respons import APIResponse
 
@@ -56,4 +56,18 @@ def getRekamPasienSummary(
         status_code=200,
         message="success",
         data= summary
+    )
+
+@router.get("/predict/{id_rekam_pasien}")
+def getPredict(
+    id_rekam_pasien,
+    db:Session = Depends(get_db),
+    _: None = Depends(require_role(RoleEnum.ahli_gizi,RoleEnum.tenaga_kesehatan))  
+):
+    result = prediksiIntervensi(db,id_rekam_pasien)
+    
+    return APIResponse(
+        status_code=200,
+        message="success",
+        data= result
     )

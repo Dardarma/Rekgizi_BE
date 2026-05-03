@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.models import Parameter, RekamPasienParameter
 from app.models.diagnosa_pasien import DiagnosaPasien
 from app.models.opsi_parameter import OpsiParameter
+import numpy as np
 
 def get_parameter_input_service(
     db:Session
@@ -40,7 +41,7 @@ def saveParameterPasien(
         ).first()
 
         empty = (
-            (item.jawaban is None or item.jawaban == "")
+            (item.jawaban is None or str(item.jawaban).strip() == "")
             and item.opsi_parameter_id is None
         )
 

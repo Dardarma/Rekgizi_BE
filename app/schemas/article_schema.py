@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 from typing import Optional
 from app.schemas.meta_schema import PaginateSchema
@@ -9,6 +11,7 @@ class articleBaseInfo(BaseModel):
     judul: str
     konten: Optional[str]
     is_published: bool 
+    tanggal:date
 
 class articleGetResponse(BaseModel):
     data: list[articleBaseInfo]

@@ -138,6 +138,7 @@ CREATE TABLE articles (
     user_id INTEGER NOT NULL,
     judul VARCHAR(255) NOT NULL,
     konten TEXT,
+    thumbnail_url varchar(255),
     is_published BOOLEAN NOT NULL DEFAULT false,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

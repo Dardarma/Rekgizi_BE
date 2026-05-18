@@ -10,6 +10,7 @@ class Article(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     judul = Column(String(255))
     konten = Column(Text)
+    thumbnail_url = Column(String(255))
     is_published = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), nullable=True, server_default=func.now(), onupdate=func.now())

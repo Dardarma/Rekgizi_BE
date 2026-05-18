@@ -9,6 +9,7 @@ class articleBaseInfo(BaseModel):
     user_id: int
     nama_pembuat: str
     judul: str
+    url_thumbnail: Optional[str]
     konten: Optional[str]
     is_published: bool 
     tanggal:date
@@ -20,10 +21,12 @@ class articleGetResponse(BaseModel):
 class articleCreate(BaseModel):
     user_id: int
     judul: str
+    url_thumbnail: Optional[str]
     konten: Optional[str]
     is_published: bool
 
 class articleUpdate(BaseModel):
     judul: Optional[str]
     konten: Optional[str]
+    url_thumbnail: Optional[str]
     is_published: Optional[bool]

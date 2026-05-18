@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.api.v1.auth_route import get_db
 from app.utils.helpers.respons import APIResponse
-from app.service.jadwal_konseling.jadwal_tersedia_service import delete_jadwal_tersedia_service, edit_jadwal_tersedia_service, get_jadwal_tersedia_by_id_service, get_jadwal_tersedia_service, post_jadwal_tersedia_service
+from app.service.jadwal_konseling.jadwal_tersedia_service import delete_jadwal_tersedia_service, edit_jadwal_tersedia_service, get_jadwal_tersedia_by_id_service, get_jadwal_tersedia_service, post_jadwal_tersedia_service, get_jadwal_tersedia_by_user_service
 from app.schemas.jadwal_tersedia_schema import JadwalTersediaCreate, JadwalTersediaListInfo, JadwalTersediaUpdate, jadwalTersediaBasicInfo
 from app.core.require_role import require_role
 from app.models.users import RoleEnum
@@ -20,6 +20,20 @@ def get_jadwal_tersedia(
         message="success",
         data={"jadwal_tersedia": jadwal_tersedia}
 )
+
+@router.get("/user", response_model=APIResponse[list[jadwalTersediaBasicInfo]], summary="Get jadwal tersedia berdasarkan user yang sedang login")
+def get_jadwal_tersedia_by_user(
+    state = Depends(require_role(RoleEnum.ahli_gizi)),
+    db: Session = Depends(get_db)
+):
+    user_id = state.user_id
+    jadwal = get_jadwal_tersedia_by_user_service(db, user_id)
+
+    return APIResponse(
+        status_code=200,
+        message="success",
+        data= jadwal
+    )
 
 @router.post("/",response_model=APIResponse[jadwalTersediaBasicInfo],summary="upload jadwal tersedia")
 def create_jadwal_tersedia(

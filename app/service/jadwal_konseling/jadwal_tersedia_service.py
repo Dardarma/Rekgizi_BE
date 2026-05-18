@@ -40,6 +40,35 @@ def get_jadwal_tersedia_weekly(
         for row in weekly_rows
     ]
 
+
+def get_jadwal_tersedia_by_user_service(
+    db: Optional[Session] = None,
+    user_id: int = None
+):
+    Session = db or SessionLocal()
+
+    query = (
+        Session.query(
+            JadwalTersedia.id,
+            JadwalTersedia.konselor_id,
+            JadwalTersedia.day_of_week,
+            JadwalTersedia.start_time,
+            JadwalTersedia.end_time,
+        ).filter(JadwalTersedia.deleted_at.is_(None))
+        .filter(JadwalTersedia.konselor_id == user_id)
+    ).all()
+
+    return [
+        {
+            "id": row.id,
+            "konselor_id": row.konselor_id,
+            "day_of_week": row.day_of_week,
+            "start_time": row.start_time,
+            "end_time": row.end_time,
+        }
+        for row in query
+    ]    
+
 def get_libur(
         db: Optional[Session] = None,
         start_date: date = None,

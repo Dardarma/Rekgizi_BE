@@ -49,6 +49,8 @@ class JadwalTersediaCreate(JadwalTersediaValidation):
     start_time: time
     end_time: time
 
+
+
 class JadwalTersediaUpdate(JadwalTersediaValidation):
     day_of_week: Optional[str] | None = None
     start_time: Optional[time] | None = None

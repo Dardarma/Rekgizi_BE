@@ -121,13 +121,12 @@ def post_rekam_pasien_service(
     
     new_rekam_pasien = RekamPasien(
         pasien_id=payload.pasien_id,
-        tanggal_asesmen=payload.tanggal_asesmen,
+        tanggal_asesmen=payload.tanggal_assesmen,
         status=payload.status,
         intervensi_id=payload.intervensi_id,
         tujuan_intervensi=payload.tujuan_intervensi,
         prinsip_intervensi=payload.prinsip_intervensi,
         edukasi_intervensi=payload.edukasi_intervensi,
-        rencana_diet_intervensi=payload.rencana_diet_intervensi,
     )
 
     db.add(new_rekam_pasien)

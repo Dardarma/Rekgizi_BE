@@ -116,6 +116,9 @@ def map_to_summary(result: RekamPasien) -> RekamPasienSummary:
             ]
     )
 
+from fastapi import HTTPException
+
+
 def prediksiIntervensi(db: Session, rekam_pasien_id: int):
 
     query = (
@@ -133,12 +136,21 @@ def prediksiIntervensi(db: Session, rekam_pasien_id: int):
     )
 
     if not query:
-        raise ValueError("Rekam pasien tidak ditemukan")
+        raise HTTPException(
+            status_code=404,
+            detail="Rekam pasien tidak ditemukan"
+        )
+
+    validateImportantParameters(db, query)
 
     try:
+
         features = map_to_features(query)
+
         cluster = predict_cluster_service(features)
+
         intervensi = get_intervensi_by_cluster(db, cluster)
+
         result = {
             "intervensi_id": intervensi.id,
             "jenis_diet": intervensi.jenis_diet,
@@ -149,17 +161,22 @@ def prediksiIntervensi(db: Session, rekam_pasien_id: int):
             "energi": intervensi.energi,
             "karbohidrat": intervensi.karbohidrat,
         }
-        
-        payload_obj = IntervensiRekamPasienRequest(**result)
-        
-        data = putIntervensiPasienService(db,rekam_pasien_id,payload_obj)
 
+        payload_obj = IntervensiRekamPasienRequest(**result)
+
+        data = putIntervensiPasienService(
+            db,
+            rekam_pasien_id,
+            payload_obj
+        )
 
         return data
 
     except Exception as e:
-        raise ValueError("ERROR PREDIKSI:", e)
-
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 
 def convert_value(value, target_type):
@@ -296,3 +313,46 @@ def build_payload_from_intervensi(intervensi: IntervensiInfo):
         "energi": intervensi.energi,
         "karbohidrat": intervensi.karbohidrat
     }
+
+def validateImportantParameters(db: Session, rekam_pasien):
+
+    important_parameters = (
+        db.query(Parameter)
+        .filter(
+            Parameter.important == True,
+            Parameter.deleted_at.is_(None)
+        )
+        .all()
+    )
+
+    rekam_parameter_map = {
+        item.parameter.id: item
+        for item in rekam_pasien.rekam_pasien_parameter
+    }
+
+    missing_parameters = []
+
+    for parameter in important_parameters:
+
+        rekam_param = rekam_parameter_map.get(parameter.id)
+
+        if (
+            rekam_param is None or
+            rekam_param.jawaban is None or
+            str(rekam_param.jawaban).strip() == ""
+        ):
+
+            missing_parameters.append({
+                "parameter_id": parameter.id,
+                "parameter_nama": parameter.nama,
+                "kategori": parameter.kategori
+            })
+
+    if missing_parameters:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Parameter penting belum lengkap",
+                "missing_parameters": missing_parameters
+            }
+        )

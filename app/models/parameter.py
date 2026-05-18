@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, func, Enum
+from sqlalchemy import Column, Integer, String, TIMESTAMP, func, Enum, Boolean
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 
@@ -19,6 +19,7 @@ class Parameter(Base):
     nama = Column(String(255))
     kategori = Column(String(50))
     tipe_input = Column(Enum(TipeInputEnum,name="enum_tipe_input"),nullable=False)
+    important = Column(Boolean, default=False)
     satuan = Column(String)
 
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())

@@ -10,6 +10,7 @@ class parameterBaseInfo(BaseModel):
     kategori: str
     tipe_input: TipeInputEnum
     satuan: Optional[str]
+    important: bool
     
     model_config = {
         "from_attributes": True
@@ -20,12 +21,14 @@ class parameterCreate(BaseModel):
     kategori: str
     tipe_input: TipeInputEnum
     satuan : str
+    important: bool
 
 class parameterUpdate(BaseModel):
     nama: Optional[str] = None
     kategori: Optional[str] = None
     tipe_input: Optional[TipeInputEnum] = None
     satuan: Optional[str]
+    important: Optional[bool] = None
     
 from typing import List, Optional
 

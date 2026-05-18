@@ -54,6 +54,7 @@ def get_article_service(
             "nama_pembuat": nama_pembuat,
             "judul": art.judul,
             "konten": art.konten,
+            "url_thumbnail": art.thumbnail_url,
             "is_published": art.is_published,
             "tanggal": art.created_at.date()
         })
@@ -94,6 +95,7 @@ def get_article_by_id_service(
         "judul": art.judul,
         "konten": art.konten,
         "is_published": art.is_published,
+        "url_thumbnail": art.thumbnail_url,
         "tanggal": art.created_at.date()
     }
 
@@ -130,6 +132,7 @@ def update_article_service(
     article.judul = payload.judul
     article.konten = payload.konten
     article.is_published = payload.is_published
+    article.thumbnail_url = payload.url_thumbnail
 
     db.commit()
     db.refresh(article)

@@ -25,6 +25,8 @@ def get_jadwal_konsultasi(
         data= jadwal
     )
 
+
+
 @router.post("/", response_model=APIResponse[jadwalKonselingBasicInfo], summary="Create jadwal konsultasi")
 def create_jadwal_konsultasi(
     payload: jadwalKonselingCreate,

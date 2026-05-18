@@ -35,6 +35,7 @@ def create_parameter_service(
         nama=payload.nama,
         kategori=payload.kategori,
         tipe_input=payload.tipe_input,
+        important=payload.important,
         satuan = payload.satuan
     )
 
@@ -57,6 +58,7 @@ def updated_parameter_service(
     parameter.kategori = payload.kategori
     parameter.tipe_input = payload.tipe_input
     parameter.satuan = payload.satuan
+    parameter.important = payload.important
 
     db.commit()
     db.refresh(parameter)

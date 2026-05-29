@@ -1,6 +1,7 @@
 from datetime import date, time
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
+from app.schemas.meta_schema import MetaPaginateSchema
 
 class jadwalKonselingBasicInfo(BaseModel):
     id: int
@@ -30,8 +31,18 @@ class jadwalKonselingUpdate(BaseModel):
     jadwal_tersedia_id: int | None = None
     tanggal_konseling: date | None = None
 
-class JadwalKonselingStatus(BaseModel):
-    status: str
-
-class jadwalKonselingUbahCatatan(BaseModel):
+class JadwalKonselingStatusCatatanUpdate(BaseModel):
+    status: str | None = None
     catatan: str | None = None
+
+class MetaPaginateSchemaJadwalKonseling(MetaPaginateSchema):
+    data: List[jadwalKonselingBasicInfo]
+
+class JadwalKonselingDashboardInfo(BaseModel):
+    id: int
+    tanggal_konseling: date
+    status: str
+    nama_konselor: str
+    day_of_week: str
+    start_time: time
+    jadwal_tersedia_id: int

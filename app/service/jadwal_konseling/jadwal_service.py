@@ -10,8 +10,9 @@ from app.schemas.jadwal_schema import jadwalKonselingCreate, jadwalKonselingUpda
 
 def get_jadwal_kosultasi_by_user(
         db: Optional[Session] = None, 
-        user_id: int = None, role: str = None
-    ) -> List[Dict[str, Any]]   :
+        user_id: int = None, role: str = None,
+        page: int = 1, limit: int = 10
+    ) -> Dict[str, Any]:
     owns_session = db is None
     session = db or SessionLocal()
     konselor = aliased(User)
@@ -49,30 +50,39 @@ def get_jadwal_kosultasi_by_user(
                 detail="maaf anda tidak memiliki akses"
             )
 
-        jadwal = jadwal.all()
-        if not jadwal:
+        total = jadwal.count()
+        total_pages = (total + limit - 1) // limit if limit > 0 else 0
+        jadwal = jadwal.offset((page - 1) * limit).limit(limit).all()
+
+        if not jadwal and page == 1:
             raise HTTPException(
                 status_code=404,
                 detail="Jadwal tidak ditemukan"
             )
 
-        return [
-            {
-                "id": item.id,
-                "pasien_id": item.pasien_id,
-                "konselor_id": item.konselor_id,
-                "jadwal_tersedia_id": item.jadwal_tersedia_id,
-                "tanggal_konseling": item.tanggal_konseling,
-                "nama_konselor": item.nama_konselor,
-                "nama_pasien": item.nama_pasien,
-                "day_of_week": item.day_of_week,
-                "start_time": item.start_time,
-                "end_time": item.end_time,
-                "status": item.status,
-                "catatan": item.catatan,
-            }
-            for item in jadwal
-        ]
+        return {
+            "data": [
+                {
+                    "id": item.id,
+                    "pasien_id": item.pasien_id,
+                    "konselor_id": item.konselor_id,
+                    "jadwal_tersedia_id": item.jadwal_tersedia_id,
+                    "tanggal_konseling": item.tanggal_konseling,
+                    "nama_konselor": item.nama_konselor,
+                    "nama_pasien": item.nama_pasien,
+                    "day_of_week": item.day_of_week,
+                    "start_time": item.start_time,
+                    "end_time": item.end_time,
+                    "status": item.status,
+                    "catatan": item.catatan,
+                }
+                for item in jadwal
+            ],
+            "total": total,
+            "total_pages": total_pages,
+            "current_page": page,
+            "limit": limit
+        }
     finally:
         if owns_session:
             session.close()
@@ -210,54 +220,28 @@ def edit_jadwal_konseling_service(
     }
 
 
-def ubah_status_jadwal_konseling_service(
+def ubah_status_dan_catatan_jadwal_konseling_service(
     db: Session,
     jadwal_konseling_id: int,
-    new_status: str,
-):
-    jadwal = get_jadwal_konsultasi_orm(db=db, jadwal_konseling_id=jadwal_konseling_id)
-
-    if new_status not in ["pending", "approved", "rejected"]:
-        raise HTTPException(status_code=400, detail="Status tidak valid")
-
-    if not jadwal:
-        raise HTTPException(status_code=404, detail="Jadwal Konseling tidak ditemukan")
-
-    if jadwal.status == "approved" and new_status == "pending":
-        raise HTTPException(status_code=400, detail="Status approved tidak dapat diubah kembali ke pending")
-
-    jadwal.status = new_status
-
-    db.commit()
-    db.refresh(jadwal)
-
-    updated_jadwal = get_jadwal_konsultasi_read(db=db, jadwal_konseling_id=jadwal.id)
-    return{
-        "id": updated_jadwal.id,
-        "pasien_id": updated_jadwal.pasien_id,
-        "konselor_id": updated_jadwal.konselor_id,
-        "jadwal_tersedia_id": updated_jadwal.jadwal_tersedia_id,
-        "tanggal_konseling": updated_jadwal.tanggal_konseling,
-        "nama_konselor": updated_jadwal.nama_konselor,
-        "nama_pasien": updated_jadwal.nama_pasien,
-        "day_of_week": updated_jadwal.day_of_week,
-        "start_time": updated_jadwal.start_time,
-        "end_time": updated_jadwal.end_time,
-        "status": updated_jadwal.status,
-        "catatan": updated_jadwal.catatan,
-    }
-
-def ubah_catatan_jadwal_konseling_service(
-    db: Session,
-    jadwal_konseling_id: int,
-    new_catatan: str | None,
+    new_status: str | None = None,
+    new_catatan: str | None = None,
 ):
     jadwal = get_jadwal_konsultasi_orm(db=db, jadwal_konseling_id=jadwal_konseling_id)
 
     if not jadwal:
         raise HTTPException(status_code=404, detail="Jadwal Konseling tidak ditemukan")
 
-    jadwal.catatan = new_catatan
+    if new_status is not None:
+        if new_status not in ["pending", "approved", "rejected"]:
+            raise HTTPException(status_code=400, detail="Status tidak valid")
+
+        if jadwal.status == "approved" and new_status == "pending":
+            raise HTTPException(status_code=400, detail="Status approved tidak dapat diubah kembali ke pending")
+
+        jadwal.status = new_status
+
+    if new_catatan is not None:
+        jadwal.catatan = new_catatan
 
     db.commit()
     db.refresh(jadwal)

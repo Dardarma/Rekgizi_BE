@@ -105,14 +105,12 @@ def generator_jadwal(
     for row in weekly_rows:
         day_key = str(row["day_of_week"]).strip().lower()
         weekly_by_day.setdefault(day_key, []).append(row)
-    print("Maping hari",weekly_by_day)
     
     libur_map = {}
     for libur in libur_rows:
         jadwal_tersedia_id = libur["jadwal_tersedia_id"]
         tanggal = libur["tanggal"]
         libur_map.setdefault(jadwal_tersedia_id, set()).add(tanggal)
-    print ("Maping libur",libur_map)
     
     result = {}
 
@@ -120,7 +118,6 @@ def generator_jadwal(
         current_date = start_date + timedelta(days=i)
         hari_ini = mapping_hari(current_date.weekday())
         daily_rows = weekly_by_day.get(hari_ini, [])
-        print("Current hari_ini:", hari_ini, "rows:", daily_rows)
 
         for jadwal in daily_rows:
             is_libur = current_date in libur_map.get(jadwal["id"], set())

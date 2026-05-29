@@ -28,7 +28,7 @@ class JadwalTersediaValidation(BaseModel):
         end_dt = datetime.combine(date.today(), self.end_time)
 
         if start_dt >= end_dt:
-            raise HTTPException(status_code=400, detail="start_time harus sebelum end_time")
+            raise HTTPException(status_code=400, detail="start time harus sebelum end time")
 
         if end_dt - start_dt < timedelta(minutes=30):
             raise HTTPException(status_code=400, detail="Jadwal minimal berdurasi 30 menit")
@@ -49,12 +49,11 @@ class JadwalTersediaCreate(JadwalTersediaValidation):
     start_time: time
     end_time: time
 
-
-
 class JadwalTersediaUpdate(JadwalTersediaValidation):
     day_of_week: Optional[str] | None = None
     start_time: Optional[time] | None = None
     end_time: Optional[time] | None = None
+
 
 
 

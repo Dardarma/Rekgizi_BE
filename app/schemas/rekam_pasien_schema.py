@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from app.schemas.meta_schema import MetaPaginateSchema
 
 class RekamPasienBase(BaseModel):
     id : int
@@ -12,10 +13,10 @@ class RekamPasienBase(BaseModel):
     tujuan_intervensi : Optional[str] = None
     prinsip_intervensi : Optional[str] = None
     edukasi_intervensi : Optional[str] = None
+    jenis_diet: Optional[str] = None
     karbohidrat : Optional[int] = None
     protein : Optional[int] = None
     energi : Optional[int] = None
-
 
 class RekamPasienCreate(BaseModel):
     pasien_id : int
@@ -25,6 +26,7 @@ class RekamPasienCreate(BaseModel):
     tujuan_intervensi : Optional[str] = None
     prinsip_intervensi : Optional[str] = None
     edukasi_intervensi : Optional[str] = None
+    jenis_diet : Optional[str] = None
     karbohidrat : Optional[int] = None
     protein : Optional[int] = None
     energi : Optional[int] = None
@@ -37,6 +39,7 @@ class RekamPasienUpdate(BaseModel):
     tujuan_intervensi : Optional[str] = None
     prinsip_intervensi : Optional[str] = None
     edukasi_intervensi : Optional[str] = None
+    jenis_diet: Optional[str] = None
     karbohidrat : Optional[int] = None
     protein : Optional[int] = None
     energi : Optional[int] = None
@@ -56,3 +59,18 @@ class APIRekamPasien(BaseModel):
     message: str
     data: RekamPasienBase
 
+class APIResponseRekamPasien(MetaPaginateSchema):
+    data: list[RekamPasienBase]
+
+class RekamPasienDashboardUser(BaseModel):
+    id: int
+    nama_pasien: Optional[str] = None
+    tanggal_asesmen: datetime
+    status: str
+    jenis_diet: Optional[str] = None
+    karbohidrat: Optional[int] = None
+    protein: Optional[int] = None
+    energi: Optional[int] = None
+    edukasi_intervensi: Optional[str] = None
+    tujuan_intervensi: Optional[str] = None
+    prinsip_intervensi: Optional[str] = None

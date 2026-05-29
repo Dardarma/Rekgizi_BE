@@ -233,8 +233,8 @@ def map_to_features(rekam_pasien):
         temp.get("Edema kaki"), bool
     )
 
-    result["Tekanan sistolik"] = convert_value(
-        temp.get("Tekanan sistolik"), float
+    result["Tekanan Sistolik"] = convert_value(
+        temp.get("Tekanan Sistolik"), float
     )
 
     result["Tekanan Diastolik"] = convert_value(
@@ -242,7 +242,7 @@ def map_to_features(rekam_pasien):
     )
 
 
-    sistolik = result.get("Tekanan sistolik", 0) or 0
+    sistolik = result.get("Tekanan Sistolik", 0) or 0
     diastolik = result.get("Tekanan Diastolik", 0) or 0
 
     result["Darah Tinggi"] = int(
@@ -356,3 +356,28 @@ def validateImportantParameters(db: Session, rekam_pasien):
                 "missing_parameters": missing_parameters
             }
         )
+
+def setujuiIntervensiService(db: Session, rekam_pasien_id: int):
+
+    query = (
+        db.query(RekamPasien)
+        .filter(
+            RekamPasien.id == rekam_pasien_id,
+            RekamPasien.deleted_at.is_(None)
+        )
+        .first()
+    )
+
+    if not query:
+        raise HTTPException(
+            status_code=404,
+            detail="Rekam pasien tidak ditemukan"
+        )
+
+    query.status = "disetujui"
+
+    db.commit()
+
+    return {
+        "message": "Intervensi disetujui"
+    }

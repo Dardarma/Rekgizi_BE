@@ -5,26 +5,31 @@ from app.utils.helpers.respons import APIResponse
 from app.core.require_role import require_role 
 from app.api.v1.auth_route import get_db
 from app.models.users import RoleEnum
-from app.schemas.jadwal_schema import JadwalKonselingStatus, jadwalKonselingBasicInfo, jadwalKonselingCreate, jadwalKonselingUbahCatatan, jadwalKonselingUpdate
-from app.service.jadwal_konseling.jadwal_service import create_jadwal_konseling_service, delete_jadwal_konseling_service, edit_jadwal_konseling_service, get_jadwal_konsultasi_by_id_service, get_jadwal_kosultasi_by_user as get_jadwal_by_user, ubah_catatan_jadwal_konseling_service, ubah_status_jadwal_konseling_service
+from app.schemas.jadwal_schema import JadwalKonselingStatusCatatanUpdate, jadwalKonselingBasicInfo, jadwalKonselingCreate, jadwalKonselingUpdate, MetaPaginateSchemaJadwalKonseling
+from app.service.jadwal_konseling.jadwal_service import create_jadwal_konseling_service, delete_jadwal_konseling_service, edit_jadwal_konseling_service, get_jadwal_konsultasi_by_id_service, get_jadwal_kosultasi_by_user as get_jadwal_by_user, ubah_status_dan_catatan_jadwal_konseling_service
 
 router = APIRouter(prefix="/jadwal", tags=["jadwal"])
 
-@router.get("/", response_model=APIResponse[List[jadwalKonselingBasicInfo]], summary="Get jadwal konsultasi berdasarkan user yang sedang login")
+@router.get("/", response_model=MetaPaginateSchemaJadwalKonseling, summary="Get jadwal konsultasi berdasarkan user yang sedang login")
 def get_jadwal_konsultasi(
+    page: int = 1,
+    limit: int = 10,
     state = Depends(require_role(RoleEnum.pasien, RoleEnum.ahli_gizi)),
     db: Session = Depends(get_db)
 ):
     user_id = state.user_id
     role = state.role
-    jadwal = get_jadwal_by_user(db, user_id, role)
+    jadwal_data = get_jadwal_by_user(db, user_id, role, page, limit)
 
-    return APIResponse(
+    return MetaPaginateSchemaJadwalKonseling(
         status_code=200,
         message="success",
-        data= jadwal
+        data=jadwal_data["data"],
+        current_page=jadwal_data["current_page"],
+        limit=jadwal_data["limit"],
+        total=jadwal_data["total"],
+        total_pages=jadwal_data["total_pages"]
     )
-
 
 
 @router.post("/", response_model=APIResponse[jadwalKonselingBasicInfo], summary="Create jadwal konsultasi")
@@ -73,33 +78,18 @@ def update_jadwal_konsultasi_by_id(
         data=updated_jadwal
     )
 
-@router.patch("/status/{jadwal_id}", response_model=APIResponse[jadwalKonselingBasicInfo], summary="Update status jadwal konsultasi by ID")
-def update_status_jadwal_konsultasi_by_id(
+@router.patch("/status-catatan/{jadwal_id}", response_model=APIResponse[jadwalKonselingBasicInfo], summary="Update status dan catatan jadwal konsultasi by ID")
+def update_status_dan_catatan_jadwal_konsultasi_by_id(
     jadwal_id: int,
-    payload: JadwalKonselingStatus,
+    payload: JadwalKonselingStatusCatatanUpdate,
     db: Session = Depends(get_db),
     _: None = Depends(require_role(RoleEnum.ahli_gizi))
 ):
-    updated_jadwal = ubah_status_jadwal_konseling_service(db, jadwal_id, payload.status)
+    updated_jadwal = ubah_status_dan_catatan_jadwal_konseling_service(db, jadwal_id, payload.status, payload.catatan)
 
     return APIResponse(
         status_code=200,
-        message="Jadwal konsultasi status updated successfully",
-        data=updated_jadwal
-    )
-
-@router.patch("/catatan/{jadwal_id}", response_model=APIResponse[jadwalKonselingBasicInfo], summary="Update catatan jadwal konsultasi by ID")
-def update_catatan_jadwal_konsultasi_by_id(
-    jadwal_id: int,
-    payload: jadwalKonselingUbahCatatan,
-    db: Session = Depends(get_db),
-    _: None = Depends(require_role(RoleEnum.ahli_gizi))
-):
-    updated_jadwal = ubah_catatan_jadwal_konseling_service(db, jadwal_id, payload.catatan)
-
-    return APIResponse(
-        status_code=200,
-        message="Jadwal konsultasi catatan updated successfully",
+        message="Jadwal konsultasi status dan catatan updated successfully",
         data=updated_jadwal
     )
 

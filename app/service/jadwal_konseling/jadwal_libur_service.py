@@ -91,7 +91,6 @@ def get_jadwal_libur_service(
             "end_time": _time_to_hhmm(row.end_time),
             "start_time": _time_to_hhmm(row.start_time),
             "day_of_week": row.day_of_week,
-            "deleted_at": _time_to_hhmm(row.deleted_at)
         }
         for row in libur
     ]

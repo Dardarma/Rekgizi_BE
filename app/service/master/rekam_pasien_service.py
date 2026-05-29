@@ -1,6 +1,7 @@
 from fastapi  import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from math import ceil
 from app.models import RekamPasien
 from app.models.users import RoleEnum, User
 from app.schemas.rekam_pasien_schema import RekamPasienBase, RekamPasienCreate, RekamPasienUpdate
@@ -38,20 +39,42 @@ def get_rekam_pasien_by_user_service(
 def get_rekam_pasien_me_service(
     db: Session,
     user_id: int,
+    current_page: int = 1,
+    limit: int = 10,
+    search: str | None = None
 ):
-    rekam_pasien = (
+    query = (
         db.query(
             RekamPasien,
             User.nama.label("nama_pasien") )
         .join(User, RekamPasien.pasien_id == User.id)
         .filter(RekamPasien.pasien_id == user_id)
         .filter(RekamPasien.deleted_at.is_(None))
-        .all()
+        .filter(RekamPasien.status == "disetujui")
     )
 
+    if search:
+        query = query.filter(
+            (RekamPasien.tanggal_asesmen.like(f"%{search}%")) |
+            (RekamPasien.jenis_diet.like(f"%{search}%"))
+        )
 
-    if not rekam_pasien:
-        raise HTTPException(status_code=404, detail="Rekam pasien not found")
+    total = query.count()
+    
+    if total == 0:
+        return {
+            "data": [],
+            "current_page": current_page,
+            "limit": limit,
+            "total": 0,
+            "total_pages": 0
+        }
+
+    offset = (current_page - 1) * limit
+
+    rekam_pasien = query.offset(offset).limit(limit).all()
+
+    total_page = ceil(total / limit) if limit > 0 else 1
 
     result = []
     for rp, nama_pasien in rekam_pasien:
@@ -61,9 +84,22 @@ def get_rekam_pasien_me_service(
             "nama_pasien": nama_pasien,
             "tanggal_asesmen": rp.tanggal_asesmen,
             "status": rp.status,
+            "jenis_diet":rp.jenis_diet,
+            "tujuan_intervensi":rp.tujuan_intervensi,
+            "prinsip_intervensi":rp.prinsip_intervensi,
+            "edukasi_intervensi":rp.edukasi_intervensi,
+            "protein":rp.protein,
+            "energi":rp.energi,
+            "karbohidrat":rp.karbohidrat,
         })
 
-    return result
+    return {
+        "data": result,
+        "current_page": current_page,
+        "limit": limit,
+        "total": total,
+        "total_pages": total_page
+    }
 
 def get_rekam_pasien_by_id_service(
     db: Session,

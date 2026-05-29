@@ -11,7 +11,7 @@ class JadwalLiburBasicInfo(BaseModel):
     day_of_week: str
 
 class JadwalLiburCreate(BaseModel):
-    jadwal_tersedisa_id: int
+    jadwal_tersedia_id: int
     tanggal: date
 
 class JadwalLiburDeleted(BaseModel):

@@ -32,7 +32,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             ("GET", "/api/v1/articles"),
         }
 
-        PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json")
+        PUBLIC_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/static/")
         
         if request.method == "OPTIONS":
             return await call_next(request)
@@ -44,6 +44,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 methode == m and path.startswith(prefix)
                 for m, prefix in PUBLIC_PREFIX_METHOD_PATHS
             )
+            and not path.startswith("/api/v1/articles/admin")
         ):
             return await call_next(request)
 

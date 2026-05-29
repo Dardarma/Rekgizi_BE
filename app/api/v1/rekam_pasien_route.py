@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends
 from app.core.require_role import require_role
 from app.models.users import RoleEnum
-from app.schemas.rekam_pasien_schema import RekamPasienBase, RekamPasienCreate, RekamPasienUpdate
+from app.schemas.rekam_pasien_schema import RekamPasienBase, RekamPasienCreate, RekamPasienUpdate, APIResponseRekamPasien
 from app.utils.helpers.respons import APIResponse
 from sqlalchemy.orm import Session
 from app.api.v1.auth_route import get_db
@@ -32,7 +32,7 @@ def get_rekam_pasien_by_user(
         data=rekam_pasien
     )
 
-@router.get("/", response_model=APIResponse[list[RekamPasienBase]], summary="Get Rekam Pasien by User ID")
+@router.get("/", response_model=APIResponseRekamPasien, summary="Get Rekam Pasien by User ID")
 def get_rekam_pasien_me(
    current_user = Depends(require_role(RoleEnum.pasien)),
    db: Session = Depends(get_db),
@@ -40,10 +40,14 @@ def get_rekam_pasien_me(
     pasien_id = current_user.user_id
     rekam_pasien = get_rekam_pasien_me_service(db,pasien_id)
 
-    return APIResponse(
+    return APIResponseRekamPasien(
         status_code=200,
         message="success",
-        data=rekam_pasien
+        current_page=rekam_pasien["current_page"],
+        limit=rekam_pasien["limit"],
+        total=rekam_pasien["total"],
+        total_pages=rekam_pasien["total_pages"],
+        data=rekam_pasien["data"]
     )
 
 @router.get("/detail/{rekam_pasien_id}", response_model=APIResponse[RekamPasienBase], summary="Get Rekam Pasien by Rekam Pasien ID")

@@ -50,3 +50,14 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+*.bmp
+*.tiff
+*.ico

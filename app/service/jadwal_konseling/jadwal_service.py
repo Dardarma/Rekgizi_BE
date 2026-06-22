@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, aliased
 from app.core.database import SessionLocal
 from app.models import JadwalKonseling, User, JadwalTersedia
 from app.schemas.jadwal_schema import jadwalKonselingCreate, jadwalKonselingUpdate
+from app.service.notification_service import send_jadwal_konseling_notification
 
 def get_jadwal_kosultasi_by_user(
         db: Optional[Session] = None, 
@@ -153,14 +154,15 @@ def get_jadwal_konsultasi_by_id_service(
 
 def create_jadwal_konseling_service(
     db: Session,
-    payload: jadwalKonselingCreate
+    payload: jadwalKonselingCreate,
+    pasien_id: int,
 ):
     new_jadwal_konseling = JadwalKonseling(
-        pasien_id=payload.pasien_id,
+        pasien_id=pasien_id,
         konselor_id=payload.konselor_id,
         jadwal_tersedia_id=payload.jadwal_tersedia_id,
         tanggal_konseling=payload.tanggal_konseling,
-        status=payload.status,
+        status="pending",
         catatan=payload.catatan
     )
     db.add(new_jadwal_konseling)
@@ -168,6 +170,8 @@ def create_jadwal_konseling_service(
     db.refresh(new_jadwal_konseling)
 
     new_jadwal_konseling = get_jadwal_konsultasi_read(db=db, jadwal_konseling_id=new_jadwal_konseling.id)
+    send_jadwal_konseling_notification(db, new_jadwal_konseling)
+
     return{
         "id": new_jadwal_konseling.id,
         "pasien_id": new_jadwal_konseling.pasien_id,

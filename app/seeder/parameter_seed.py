@@ -25,6 +25,11 @@ def seed_parameter():
             Parameter(nama="Hemoglobin", kategori="biokimia", tipe_input=TipeInputEnum.number, satuan="g/dL", important=False),
             Parameter(nama="Albumin", kategori="biokimia", tipe_input=TipeInputEnum.number, satuan="g/dL", important=False),
 
+            # ================= FITUR RIWAYAT/ML =================
+            Parameter(nama="Konsumsi Natrium Berlebih", kategori="riwayat", tipe_input=TipeInputEnum.boolean, satuan=None, important=True),
+            Parameter(nama="Konsumsi Karbohidrat Berlebih", kategori="riwayat", tipe_input=TipeInputEnum.boolean, satuan=None, important=True),
+            Parameter(nama="Riwayat Diabetes", kategori="riwayat", tipe_input=TipeInputEnum.boolean, satuan=None, important=True),
+
             # ================= FISIK KLINIS =================
             Parameter(nama="Dispnea", kategori="fisik klinis", tipe_input=TipeInputEnum.boolean, satuan=None, important=False),
             Parameter(nama="Anorexia", kategori="fisik klinis", tipe_input=TipeInputEnum.boolean, satuan=None, important=False),
@@ -35,7 +40,9 @@ def seed_parameter():
             Parameter(nama="Edema kaki", kategori="fisik klinis", tipe_input=TipeInputEnum.boolean, satuan=None, important=False),
             Parameter(nama="Kulit mengelupas", kategori="fisik klinis", tipe_input=TipeInputEnum.boolean, satuan=None, important=False),
             Parameter(nama="Suhu", kategori="fisik klinis", tipe_input=TipeInputEnum.number, satuan="C", important=False),
-            Parameter(nama="Tekanan darah", kategori="fisik klinis", tipe_input=TipeInputEnum.number, satuan="mmHg", important=True),
+            Parameter(nama="Tekanan darah", kategori="fisik klinis", tipe_input=TipeInputEnum.text, satuan="mmHg", important=False),
+            Parameter(nama="Tekanan Sistolik", kategori="fisik klinis", tipe_input=TipeInputEnum.number, satuan="mmHg", important=True),
+            Parameter(nama="Tekanan Diastolik", kategori="fisik klinis", tipe_input=TipeInputEnum.number, satuan="mmHg", important=True),
 
             # ================= RIWAYAT =================
             Parameter(nama="Jumlah Cairan melalui oral", kategori="riwayat", tipe_input=TipeInputEnum.select, satuan=None, important=False),
@@ -60,7 +67,12 @@ def seed_parameter():
                 kategori=item.kategori
             ).first()
 
-            if not existing:
+            if existing:
+                existing.tipe_input = item.tipe_input
+                existing.satuan = item.satuan
+                existing.important = item.important
+                existing.deleted_at = None
+            else:
                 db.add(item)
 
         db.commit()

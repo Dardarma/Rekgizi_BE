@@ -36,9 +36,9 @@ def get_jadwal_konsultasi(
 def create_jadwal_konsultasi(
     payload: jadwalKonselingCreate,
     db: Session = Depends(get_db),
-    _: None = Depends(require_role(RoleEnum.pasien))
+    state = Depends(require_role(RoleEnum.pasien))
 ):
-    create_jadwal = create_jadwal_konseling_service(db, payload)
+    create_jadwal = create_jadwal_konseling_service(db, payload, state.user_id)
 
     return APIResponse(
         status_code=201,
@@ -93,11 +93,11 @@ def update_status_dan_catatan_jadwal_konsultasi_by_id(
         data=updated_jadwal
     )
 
-@router.patch("/{jadwal_id}", response_model=APIResponse[None], summary="Delete jadwal konsultasi by ID")
+@router.delete("/{jadwal_id}", response_model=APIResponse[None], summary="Delete jadwal konsultasi by ID")
 def delete_jadwal_konsultasi_by_id(
     jadwal_id: int,
     db: Session = Depends(get_db),
-    _: None = Depends(require_role(RoleEnum.ahli_gizi))
+    _: None = Depends(require_role(RoleEnum.pasien, RoleEnum.ahli_gizi))
 ):
     delete_jadwal_konseling_service(db, jadwal_id)
 

@@ -9,6 +9,7 @@ from app.models.jadwal_libur import JadwalLibur
 from app.models.jadwal_tersedia import JadwalTersedia
 from app.models.opsi_parameter import OpsiParameter
 from app.models.parameter import Parameter
+from app.models.notification_token import NotificationToken
 from app.models.rekam_pasien import RekamPasien
 from app.models.rekam_pasien_parameter import RekamPasienParameter
 from app.models.users import User
@@ -23,6 +24,7 @@ __all__ = [
     "JadwalTersedia",
     "OpsiParameter",
     "Parameter",
+    "NotificationToken",
     "RekamPasien",
     "RekamPasienParameter",
     "User",

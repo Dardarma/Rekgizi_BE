@@ -1,6 +1,9 @@
 import os
 import uuid
 import shutil
+import logging
+from pathlib import Path
+from urllib.parse import unquote, urlparse
 from fastapi import UploadFile, HTTPException
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
@@ -53,3 +56,42 @@ def save_upload_file(upload_file: UploadFile, destination_folder: str) -> str:
     relative_path = file_path.replace("\\", "/")
     
     return relative_path
+
+
+ARTICLE_UPLOAD_ROOT = Path("static/uploads/articles").resolve()
+logger = logging.getLogger(__name__)
+
+
+def resolve_article_upload_path(file_url: str | None) -> Path | None:
+    """Resolve URL/path upload artikel dan tolak path di luar folder artikel."""
+    if not file_url:
+        return None
+
+    parsed_path = unquote(urlparse(str(file_url)).path).lstrip("/").replace("\\", "/")
+    candidate = Path(parsed_path).resolve()
+    try:
+        candidate.relative_to(ARTICLE_UPLOAD_ROOT)
+    except ValueError:
+        return None
+    return candidate
+
+
+def delete_article_upload(file_url: str | None) -> bool:
+    """Hapus file upload artikel secara aman; URL eksternal selalu diabaikan."""
+    file_path = resolve_article_upload_path(file_url)
+    if file_path is None or not file_path.is_file():
+        return False
+    try:
+        file_path.unlink()
+        return True
+    except OSError:
+        logger.exception("Gagal menghapus file upload artikel: %s", file_path)
+        return False
+
+
+def normalize_article_upload_url(file_url: str | None) -> str | None:
+    file_path = resolve_article_upload_path(file_url)
+    if file_path is None:
+        return None
+    relative_path = file_path.relative_to(ARTICLE_UPLOAD_ROOT)
+    return f"/static/uploads/articles/{relative_path.as_posix()}"

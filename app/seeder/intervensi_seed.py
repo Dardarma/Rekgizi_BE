@@ -9,7 +9,7 @@ def seed_intervensi():
     try:
         data_intervensi = [
             {
-                "jenis_diet": "Diet Ginjal Protein 30 g",
+                "jenis_diet": "Diet Ginjal Rendah Protein 30 g",
                 "tujuan": "Pembatasan jumlah protein, natrium, kalium, fosfor dan cairan",
                 "prinsip": """1. Mempertahankan status gizi yang optimal.
 2. Mengurangi dan mencegah gejala uremia.
@@ -29,7 +29,7 @@ Cairan diatur bila ada edema atau gagal ginjal lanjut sesuai rekomendasi dokter.
                 "karbohidrat": 263,
             },
             {
-                "jenis_diet": "Diet Ginjal Protein 35 g",
+                "jenis_diet": "Diet Ginjal Rendah Protein 35 g",
                 "tujuan": "Pembatasan jumlah protein, natrium, kalium, fosfor dan cairan",
                 "prinsip": """1. Mempertahankan status gizi yang optimal.
 2. Mengurangi dan mencegah gejala uremia.
@@ -50,7 +50,25 @@ Cara memasak: rebus, kukus, tumis ringan, panggang. Hindari gorengan dan makanan
                 "karbohidrat": 327,
             },
             {
-                "jenis_diet": "Diet Ginjal Protein 60 g",
+                "jenis_diet": "Diet Ginjal Rendah Protein 40 g",
+                "tujuan": "Memenuhi kebutuhan energi dengan pembatasan protein, natrium, kalium, fosfor, dan cairan sesuai kondisi pasien",
+                "prinsip": """1. Mempertahankan status gizi yang optimal.
+2. Mengurangi gejala uremia dan penumpukan sisa metabolisme.
+3. Memperlambat progresivitas penurunan fungsi ginjal.""",
+                "edukasi": """Rencana Diet:
+Protein 40 g, Energi 2086 kal, Lemak 70 g, Karbohidrat 324 g.
+
+Intervensi Edukasi:
+Batasi protein sekitar 40 gram/hari sesuai evaluasi ahli gizi.
+Utamakan protein bernilai biologis tinggi seperti telur, ikan, ayam tanpa kulit, dan susu renal.
+Batasi natrium, kalium, fosfor, dan cairan sesuai hasil pemeriksaan serta anjuran tenaga kesehatan.
+Gunakan teknik memasak rebus, kukus, panggang, atau tumis ringan.""",
+                "protein": 40,
+                "energi": 2086,
+                "karbohidrat": 324,
+            },
+            {
+                "jenis_diet": "Diet Ginjal Dialisa Protein 60 g",
                 "tujuan": "Meningkatkan asupan energi dan protein berkualitas tinggi, membatasi natrium, kalium, dan fosfat, serta mengontrol cairan",
                 "prinsip": """1. Memberikan protein yang cukup untuk mengganti asam amino esensial dan nitrogen yang hilang dalam dialisat.
 2. Mencegah penimbunan hasil sisa metabolisme.
@@ -71,7 +89,7 @@ Cara memasak: rebus, kukus, panggang, tumis ringan. Hindari makanan olahan tingg
                 "karbohidrat": 290,
             },
             {
-                "jenis_diet": "Diet Ginjal Protein 65 g",
+                "jenis_diet": "Diet Ginjal Dialisa Protein 65 g",
                 "tujuan": "Meningkatkan asupan energi dan protein berkualitas tinggi, membatasi natrium, kalium, dan fosfat, serta mengontrol cairan",
                 "prinsip": """1. Memberikan protein yang cukup untuk mengganti kehilangan saat dialisis.
 2. Mencegah penimbunan metabolisme.
@@ -92,7 +110,7 @@ Cara memasak: rebus, kukus, panggang, tumis ringan.""",
                 "karbohidrat": 293,
             },
             {
-                "jenis_diet": "Diet Ginjal Protein 70 g",
+                "jenis_diet": "Diet Ginjal Dialisa Protein 70 g",
                 "tujuan": "Meningkatkan asupan energi dan protein berkualitas tinggi, membatasi natrium, kalium, dan fosfat, serta mengontrol cairan",
                 "prinsip": """1. Memberikan protein yang cukup untuk mengganti kehilangan saat dialisis.
 2. Mencegah penimbunan metabolisme.

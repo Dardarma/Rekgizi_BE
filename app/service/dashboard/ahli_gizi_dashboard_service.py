@@ -4,35 +4,61 @@ from sqlalchemy.orm import Session
 
 from app.models import JadwalKonseling, RekamPasien, Article, Intervensi
 
-from datetime import date
+from datetime import date, datetime
 
 from app.models.users import User
 
-def getInformationYearly(db:Session, user_id:int):
-    current_year = date.today().year
+
+def _period_bounds(year: int | None = None, month: int | None = None):
+    today = date.today()
+    selected_year = year or today.year
+    selected_month = month or today.month
+    start = datetime(selected_year, selected_month, 1)
+    if selected_month == 12:
+        end = datetime(selected_year + 1, 1, 1)
+    else:
+        end = datetime(selected_year, selected_month + 1, 1)
+    return selected_year, selected_month, start, end
+
+
+def getInformationYearly(
+    db: Session,
+    user_id: int,
+    year: int | None = None,
+    month: int | None = None,
+):
+    selected_year, selected_month, start, end = _period_bounds(year, month)
 
     total_case = db.query(RekamPasien).filter(
-        func.extract('year', RekamPasien.tanggal_asesmen) == current_year
+        RekamPasien.deleted_at.is_(None),
+        RekamPasien.tanggal_asesmen >= start,
+        RekamPasien.tanggal_asesmen < end,
     ).count()
 
     total_approved = db.query(RekamPasien).filter(
-        func.extract('year', RekamPasien.tanggal_asesmen) == current_year,
-        RekamPasien.status == "disetujui"
+        RekamPasien.deleted_at.is_(None),
+        RekamPasien.tanggal_asesmen >= start,
+        RekamPasien.tanggal_asesmen < end,
+        RekamPasien.status == "disetujui",
     ).count()
 
     total_appoinment = db.query(JadwalKonseling)\
         .filter(JadwalKonseling.konselor_id == user_id)\
         .filter(JadwalKonseling.status == "approved")\
         .filter(JadwalKonseling.deleted_at.is_(None))\
-        .filter(func.extract('year', JadwalKonseling.tanggal_konseling) == current_year)\
+        .filter(JadwalKonseling.tanggal_konseling >= start.date())\
+        .filter(JadwalKonseling.tanggal_konseling < end.date())\
         .count()
     
     total_article = db.query(Article)\
         .filter(Article.deleted_at.is_(None))\
+        .filter(Article.created_at >= start)\
+        .filter(Article.created_at < end)\
         .count()
 
     return {
-        "tahun": current_year,
+        "tahun": selected_year,
+        "bulan": selected_month,
         "total_case": total_case,
         "total_approved": total_approved,
         "total_appoinment": total_appoinment,
@@ -40,7 +66,12 @@ def getInformationYearly(db:Session, user_id:int):
     }
 
 
-def getRekamPasienDashboardService(db:Session):
+def getRekamPasienDashboardService(
+    db: Session,
+    year: int | None = None,
+    month: int | None = None,
+):
+    _, _, start, end = _period_bounds(year, month)
     
     rekam_pasien = (db.query(
         RekamPasien.status,
@@ -49,7 +80,11 @@ def getRekamPasienDashboardService(db:Session):
         User.nama.label("nama_pasien")
     )
     .join(User, RekamPasien.pasien_id == User.id)
-    .filter(RekamPasien.deleted_at.is_(None))
+    .filter(
+        RekamPasien.deleted_at.is_(None),
+        RekamPasien.tanggal_asesmen >= start,
+        RekamPasien.tanggal_asesmen < end,
+    )
     .order_by(RekamPasien.tanggal_asesmen.desc())
     .limit(10)
     )
@@ -61,35 +96,39 @@ def getRekamPasienDashboardService(db:Session):
         "data":result
     }
     
-def getPersebaranKasusService(db:Session):
-    
-    current_month = date.today().month
-    current_year = date.today().year
+def getPersebaranKasusService(
+    db: Session,
+    year: int | None = None,
+    month: int | None = None,
+):
+    _, _, start, end = _period_bounds(year, month)
     
     rekamPasien = (
     db.query(
-        RekamPasien.jenis_diet,
+        RekamPasien.intervensi_id,
         func.count(RekamPasien.id).label("total")
     )
     .filter(
-        func.extract('month', RekamPasien.tanggal_asesmen) == current_month,
-        func.extract('year', RekamPasien.tanggal_asesmen) == current_year,
-        RekamPasien.deleted_at.is_(None)
+        RekamPasien.tanggal_asesmen >= start,
+        RekamPasien.tanggal_asesmen < end,
+        RekamPasien.deleted_at.is_(None),
+        RekamPasien.intervensi_id.is_not(None),
     )
-    .group_by(RekamPasien.jenis_diet)
+    .group_by(RekamPasien.intervensi_id)
     .all()
     )
 
-    data_map = {item[0]: item[1] for item in rekamPasien}
+    data_map = {intervensi_id: total for intervensi_id, total in rekamPasien}
 
     intervensi = (
-        db.query(Intervensi.jenis_diet)
+        db.query(Intervensi.id, Intervensi.jenis_diet)
         .filter(Intervensi.deleted_at.is_(None))
+        .order_by(Intervensi.protein, Intervensi.id)
         .all()
     )
 
-    categories = [item[0] for item in intervensi]
-    data = [data_map.get(category, 0) for category in categories]
+    categories = [item.jenis_diet for item in intervensi]
+    data = [data_map.get(item.id, 0) for item in intervensi]
     
     response = {
         "seriesData":[
@@ -103,26 +142,29 @@ def getPersebaranKasusService(db:Session):
     
     return response
 
-def getRekamPasienPerPekan(db:Session):
-    current_month = date.today().month
-    current_year = date.today().year
+def getRekamPasienPerPekan(
+    db: Session,
+    year: int | None = None,
+    month: int | None = None,
+):
+    _, _, start, end = _period_bounds(year, month)
+    
+    week_expression = func.floor(
+        (extract('day', RekamPasien.tanggal_asesmen) - 1) / 7
+    ) + 1
 
-    
-    
     rekam_pasien = (
         db.query(
-            (
-                ((extract('day', RekamPasien.tanggal_asesmen) - 1) / 7) + 1
-            ).label("minggu"),
+            week_expression.label("minggu"),
             func.count(RekamPasien.id).label("total")
         )
         .filter(
             RekamPasien.deleted_at.is_(None),
-            extract('month', RekamPasien.tanggal_asesmen) == current_month,
-            extract('year', RekamPasien.tanggal_asesmen) == current_year,
+            RekamPasien.tanggal_asesmen >= start,
+            RekamPasien.tanggal_asesmen < end,
         )
-        .group_by("minggu")
-        .order_by("minggu")
+        .group_by(week_expression)
+        .order_by(week_expression)
         .all()
     )
     
@@ -157,14 +199,21 @@ def getRekamPasienPerPekan(db:Session):
         "categories":categories
     }
 
-def getUsiaPerTahunService(db:Session):
-    
-    today = date.today()
+def getUsiaPerTahunService(
+    db: Session,
+    year: int | None = None,
+    month: int | None = None,
+):
+    _, _, start, end = _period_bounds(year, month)
     
     rekam_pasien = (
         db.query(RekamPasien)
         .join(RekamPasien.pasien)
-        .filter(RekamPasien.deleted_at.is_(None))
+        .filter(
+            RekamPasien.deleted_at.is_(None),
+            RekamPasien.tanggal_asesmen >= start,
+            RekamPasien.tanggal_asesmen < end,
+        )
         .all()
     )
     
@@ -181,11 +230,12 @@ def getUsiaPerTahunService(db:Session):
         if not tanggal_lahir:
             continue
         
+        assessment_date = item.tanggal_asesmen.date()
         umur = (
-            today.year
+            assessment_date.year
             - tanggal_lahir.year
             -(
-                (today.month, today.day)
+                (assessment_date.month, assessment_date.day)
                 < (tanggal_lahir.month, tanggal_lahir.day)
             )
         )
@@ -219,10 +269,6 @@ def getUsiaPerTahunService(db:Session):
             "40 - 49 tahun",
             "50 - 59 tahun",
             "60 - 69 tahun",
-            "70 > tahun"
+            ">= 70 tahun"
         ]
     }
-    
-    
-
-    

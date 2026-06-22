@@ -5,6 +5,7 @@ from typing import Optional
 
 class dashboardAhliGiziBaseInfo(BaseModel):
     tahun: int
+    bulan: int
     total_case: int
     total_approved: int
     total_appoinment: int

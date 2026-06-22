@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.schemas.auth_schema import LoginSchema, TokenSchema
 from app.utils.helpers.respons import APIResponse
 from app.core.database import SessionLocal
-from app.schemas.userSchema import UserBase, UserBasicInfo, UserRegister
+from app.schemas.userSchema import UserBasicInfo, UserRegister
 
 from app.service.auth_service import authenticate_user, register_user
 
@@ -35,7 +35,7 @@ def login(
 
 @router.post("/register", response_model=APIResponse[UserBasicInfo], summary="Register new user")
 def register(
-    data: UserBase,
+    data: UserRegister,
     db : Session = Depends(get_db)
 ):
     user = register_user( user_data=data, db=db)

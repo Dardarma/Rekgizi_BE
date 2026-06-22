@@ -16,6 +16,10 @@ dist/
 # dotenv environment variable files
 .env
 
+# Firebase service account credentials
+*-firebase-adminsdk-*.json
+firebase-service-account*.json
+
 # Virtual environments
 .venv
 env/

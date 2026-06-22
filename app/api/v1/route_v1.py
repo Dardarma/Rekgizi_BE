@@ -13,6 +13,7 @@ from app.api.v1.diagnosa_route import router as diagnosa_router
 from app.api.v1.asuhan_intervensi import router as asuhan_intervensi_router
 from app.api.v1.user_dashboard_router import router as user_dashboard_router
 from app.api.v1.dashboard_ahligizi import router as ahligizi_dashboard_router
+from app.api.v1.notification_route import router as notification_router
 
 
 v1_router = [
@@ -30,5 +31,6 @@ v1_router = [
     asuhan_router,
     asuhan_intervensi_router,
     user_dashboard_router,
-    ahligizi_dashboard_router
+    ahligizi_dashboard_router,
+    notification_router
 ]

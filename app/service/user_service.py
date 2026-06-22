@@ -177,9 +177,14 @@ def edit_user_service(
 	update_data = user_data.model_dump(exclude_unset=True)
  
 	password = update_data.pop("password", None)
+	update_data.pop("password_validation", None)
+
+	if "alamat" in update_data and update_data["alamat"] is not None:
+		if hasattr(update_data["alamat"], "model_dump"):
+			update_data["alamat"] = update_data["alamat"].model_dump()
 
 	if password:
-		user.password = hash_password(password)
+		user.pass_hash = hash_password(password)
     
 	for field, value in update_data.items():
 		setattr(user, field, value)

@@ -1,5 +1,6 @@
 from typing import  List, Optional
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -100,11 +101,15 @@ def generator_jadwal(
         start_date: date,
         days = 7
 ) -> list[dict]:
- 
+    now = datetime.now(ZoneInfo("Asia/Jakarta"))
+
     weekly_by_day = {}
     for row in weekly_rows:
         day_key = str(row["day_of_week"]).strip().lower()
         weekly_by_day.setdefault(day_key, []).append(row)
+
+    for rows in weekly_by_day.values():
+        rows.sort(key=lambda item: item["start_time"])
     
     libur_map = {}
     for libur in libur_rows:
@@ -115,11 +120,15 @@ def generator_jadwal(
     result = {}
 
     for i in range(days):
-        current_date = start_date + timedelta(days=i)
-        hari_ini = mapping_hari(current_date.weekday())
+        base_date = start_date + timedelta(days=i)
+        hari_ini = mapping_hari(base_date.weekday())
         daily_rows = weekly_by_day.get(hari_ini, [])
 
         for jadwal in daily_rows:
+            current_date = base_date
+            if current_date == now.date() and jadwal["start_time"] <= now.time():
+                current_date = current_date + timedelta(days=7)
+
             is_libur = current_date in libur_map.get(jadwal["id"], set())
 
             item = {
@@ -139,8 +148,8 @@ def generator_jadwal(
 def get_jadwal_tersedia_service(
     db: Optional[Session] = None,
 ):
-    start_date = date.today()
-    end_date = start_date + timedelta(days=7)
+    start_date = datetime.now(ZoneInfo("Asia/Jakarta")).date()
+    end_date = start_date + timedelta(days=14)
 
     weekly_rows = get_jadwal_tersedia_weekly(db)
     libur_rows = get_libur(db, start_date, end_date)

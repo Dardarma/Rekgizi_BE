@@ -21,15 +21,15 @@ class articleGetResponse(BaseModel):
 class articleCreate(BaseModel):
     user_id: int
     judul: str
-    thumbnail_url: Optional[str]
-    konten: Optional[str]
-    is_published: bool
+    thumbnail_url: Optional[str] = None
+    konten: Optional[str] = None
+    is_published: bool = False
 
 class articleUpdate(BaseModel):
-    judul: Optional[str]
-    konten: Optional[str]
-    thumbnail_url: Optional[str]
-    is_published: Optional[bool]
+    judul: Optional[str] = None
+    konten: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    is_published: Optional[bool] = None
 
 class articleAPIResponse(BaseModel):
     status_code: int

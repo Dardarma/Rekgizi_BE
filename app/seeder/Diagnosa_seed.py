@@ -32,6 +32,7 @@ def seed_diagnosa():
             {"kode": "NB-1.2", "diagnosa": "Kepercayaan yang salah tentang pangan dan gizi"},
             {"kode": "NB-1.4", "diagnosa": "Kurangnya memonitor diri sendiri"},
             {"kode": "NB-1.5", "diagnosa": "Kekeliruan pola makan"},
+            {"kode": "NB-1.7", "diagnosa": "Pemilihan makanan yang tidak diinginkan"},
             {"kode": "NB-3.1", "diagnosa": "Asupan makanan yang tidak aman"},
         ]
 

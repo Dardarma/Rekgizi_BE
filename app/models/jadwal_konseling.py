@@ -7,7 +7,7 @@ from app.core.database import Base
 class statusEnum(str, enum.Enum):
     pending= 'pending'
     approved ='approved'
-    C = 'rejected'
+    rejected = 'rejected'
 
 class JadwalKonseling(Base):
     __tablename__ = 'jadwal_konseling'

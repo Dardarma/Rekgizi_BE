@@ -60,3 +60,4 @@ class User(Base):
 
     articles = relationship("Article", back_populates="pembuat")
     rekam_pasien = relationship("RekamPasien", back_populates="pasien")
+    notification_tokens = relationship("NotificationToken", back_populates="user")

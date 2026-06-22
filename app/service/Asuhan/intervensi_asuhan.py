@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 
-from app.ml.ml_service import predict_cluster_service
+from app.ml.ml_v2.ml_service import ModelInputError, predict_diet_service
 from app.models.diagnosa import Diagnosa
 from app.models.diagnosa_pasien import DiagnosaPasien
 from app.models.intevensi import Intervensi
@@ -11,7 +11,6 @@ from app.schemas.intervensi_schema import IntervensiInfo
 from app.schemas.rekam_pasien_schema import IntervensiRekamPasienRequest, RekamPasienBase
 from app.schemas.summary_schema import DiagnosaSummaryItem, ParameterSummaryItem, RekamPasienSummary
 from app.utils.helpers.calculate_age import hitung_usia
-from sqlalchemy.orm import joinedload
 
 
 def putIntervensiPasienService(
@@ -51,6 +50,7 @@ def putIntervensiPasienService(
         tujuan_intervensi=query.tujuan_intervensi,
         prinsip_intervensi=query.prinsip_intervensi,
         edukasi_intervensi=query.edukasi_intervensi,
+        jenis_diet=query.jenis_diet,
         karbohidrat=query.karbohidrat,
         protein=query.protein,
         energi=query.energi
@@ -141,15 +141,10 @@ def prediksiIntervensi(db: Session, rekam_pasien_id: int):
             detail="Rekam pasien tidak ditemukan"
         )
 
-    validateImportantParameters(db, query)
-
     try:
-
         features = map_to_features(query)
-
-        cluster = predict_cluster_service(features)
-
-        intervensi = get_intervensi_by_cluster(db, cluster)
+        recommendation = predict_diet_service(features)
+        intervensi = get_intervensi_by_recommendation(db, recommendation)
 
         result = {
             "intervensi_id": intervensi.id,
@@ -172,20 +167,30 @@ def prediksiIntervensi(db: Session, rekam_pasien_id: int):
 
         return data
 
+    except HTTPException:
+        raise
+    except ModelInputError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=str(e)
-        )
+        ) from e
 
 
 def convert_value(value, target_type):
     if value is None:
+        # Default boolean to 0 (no/false) if not provided
+        if target_type == bool:
+            return 0
         return None
 
     value = str(value).strip().lower()
 
     if value in ["", "-", "none", "null"]:
+        # Default boolean to 0 (no/false) if empty
+        if target_type == bool:
+            return 0
         return None
 
     if target_type == int:
@@ -201,83 +206,93 @@ def convert_value(value, target_type):
             return None
 
     if target_type == bool:
-        return value in ["1", "true", "ya", "yes"]
+        if value in ["1", "true", "ya", "yes"]:
+            return 1
+        if value in ["0", "false", "tidak", "no"]:
+            return 0
+        # Default to 0 (no/false) if value doesn't match any known pattern
+        return 0
 
     return value
 
 def map_to_features(rekam_pasien):
-    result = {}
-
     temp = {}
 
     for item in rekam_pasien.rekam_pasien_parameter:
-        nama_db = item.parameter.nama
-        raw_value = item.jawaban
+        if item.deleted_at is not None or item.parameter is None:
+            continue
+        nama_db = item.parameter.nama.strip().casefold()
+        temp[nama_db] = item.jawaban
 
-        temp[nama_db] = raw_value
+    def get_parameter(*names):
+        for name in names:
+            value = temp.get(name.casefold())
+            if value is not None and str(value).strip() != "":
+                return value
+        return None
 
+    result = {
+        "BB": convert_value(get_parameter("Berat badan", "BB"), float),
+        "Ureum": convert_value(get_parameter("Ureum"), float),
+        "Creatinin": convert_value(get_parameter("Creatinine", "Creatinin"), float),
+        "Kelebihan Natrium": convert_value(
+            get_parameter("Konsumsi Natrium Berlebih", "Kelebihan Natrium"), bool
+        ),
+        "Kelebihan Karbohidrat": convert_value(
+            get_parameter("Konsumsi Karbohidrat Berlebih", "Kelebihan Karbohidrat"), bool
+        ),
+        "Edema": convert_value(get_parameter("Edema kaki", "Edema"), bool),
+    }
 
-    result["BB"] = convert_value(temp.get("Berat badan"), float)
-    result["Creatinin"] = convert_value(temp.get("Creatinine"), float)
-    result["Ureum"] = convert_value(temp.get("Ureum"), float)
+    sistolik = convert_value(get_parameter("Tekanan Sistolik"), float)
+    diastolik = convert_value(get_parameter("Tekanan Diastolik"), float)
+    tekanan_darah = get_parameter("Tekanan darah", "Tensi")
+    if (sistolik is None or diastolik is None) and tekanan_darah is not None:
+        try:
+            raw_sistolik, raw_diastolik = str(tekanan_darah).split("/", maxsplit=1)
+            sistolik = sistolik if sistolik is not None else float(raw_sistolik.strip())
+            diastolik = diastolik if diastolik is not None else float(raw_diastolik.strip())
+        except (TypeError, ValueError):
+            pass
 
-    result["Kelebihan Natrium"] = convert_value(
-        temp.get("Konsumsi Natrium Berlebih"), bool
-    )
+    result["Tekanan_Sistolik"] = sistolik
+    result["Tekanan_Diastolik"] = diastolik
 
-    result["Kelebihan Karbohidrat"] = convert_value(
-        temp.get("Konsumsi Karbohidrat Berlebih"), bool
-    )
+    if sistolik is not None and diastolik is not None:
+        result["Darah Tinggi"] = int((sistolik > 120) or (diastolik > 80))
+    else:
+        result["Darah Tinggi"] = None
 
-    result["Edema"] = convert_value(
-        temp.get("Edema kaki"), bool
-    )
-
-    result["Tekanan Sistolik"] = convert_value(
-        temp.get("Tekanan Sistolik"), float
-    )
-
-    result["Tekanan Diastolik"] = convert_value(
-        temp.get("Tekanan Diastolik"), float
-    )
-
-
-    sistolik = result.get("Tekanan Sistolik", 0) or 0
-    diastolik = result.get("Tekanan Diastolik", 0) or 0
-
-    result["Darah Tinggi"] = int(
-        (sistolik > 120) or (diastolik > 80)
-    )
-
-
-    gdp = convert_value(temp.get("Glukosa darah puasa"), float) or 0
-    gds = convert_value(temp.get("Glukosa sewaktu"), float) or 0
-    hba1c = convert_value(temp.get("HbA1c"), float) or 0
-    riwayat = convert_value(temp.get("Riwayat Diabetes"), bool)
-
-    result["Diabetes"] = int(
-        (gdp >= 126) or
-        (gds >= 200) or
-        (hba1c >= 6.5) or
-        (riwayat == 1)
-    )
+    gdp = convert_value(get_parameter("Glukosa darah puasa"), float)
+    gds = convert_value(get_parameter("Glukosa Sewaktu"), float)
+    hba1c = convert_value(get_parameter("HgbA1c", "HbA1c"), float)
+    riwayat = convert_value(get_parameter("Riwayat Diabetes", "Diabetes"), bool)
+    diabetes_sources = [gdp, gds, hba1c, riwayat]
+    if any(value is not None for value in diabetes_sources):
+        result["Diabetes"] = int(
+            (gdp is not None and gdp >= 126)
+            or (gds is not None and gds >= 200)
+            or (hba1c is not None and hba1c >= 6.5)
+            or riwayat == 1
+        )
+    else:
+        result["Diabetes"] = None
 
     return result
 
-CLUSTER_DIET_MAP = {
-    0: "Diet Rendah Protein 30 g",
-    1: "Diet Rendah Protein 40 g",
-    2: "Diet Dialisa 65 g",
-    3: "Diet Dialisa 70 g",
-    4: "Diet Rendah Protein 35 g",
-    5: "Diet Dialisa 60 g",
+MODEL_TO_SEEDER_DIET = {
+    "RP 30": "Diet Ginjal Protein 30 g",
+    "RP 35": "Diet Ginjal Protein 35 g",
+    "RP 40": "Diet Ginjal Protein 40 g",
+    "Dialisa 60": "Diet Ginjal Protein 60 g",
+    "Dialisa 65": "Diet Ginjal Protein 65 g",
+    "Dialisa 70": "Diet Ginjal Protein 70 g",
 }
 
-def get_intervensi_by_cluster(db, cluster: int):
-    jenis_diet = CLUSTER_DIET_MAP.get(cluster)
-
-    if not jenis_diet:
-        raise ValueError(f"Cluster tidak valid: {cluster}")
+def get_intervensi_by_recommendation(db, recommendation: str):
+    jenis_diet = MODEL_TO_SEEDER_DIET.get(recommendation.strip())
+    if jenis_diet is None:
+        raise ValueError(f"Rekomendasi model tidak dikenali: {recommendation}")
 
     intervensi = (
         db.query(Intervensi)
@@ -289,7 +304,10 @@ def get_intervensi_by_cluster(db, cluster: int):
     )
 
     if not intervensi:
-        raise ValueError(f"Intervensi tidak ditemukan untuk diet: {jenis_diet}")
+        raise ValueError(
+            f"Intervensi tidak ditemukan untuk diet: {jenis_diet}. "
+            "Jalankan `python -m app.seeder.intervensi_seed`."
+        )
 
     return IntervensiInfo(
         id=intervensi.id,
@@ -313,49 +331,6 @@ def build_payload_from_intervensi(intervensi: IntervensiInfo):
         "energi": intervensi.energi,
         "karbohidrat": intervensi.karbohidrat
     }
-
-def validateImportantParameters(db: Session, rekam_pasien):
-
-    important_parameters = (
-        db.query(Parameter)
-        .filter(
-            Parameter.important == True,
-            Parameter.deleted_at.is_(None)
-        )
-        .all()
-    )
-
-    rekam_parameter_map = {
-        item.parameter.id: item
-        for item in rekam_pasien.rekam_pasien_parameter
-    }
-
-    missing_parameters = []
-
-    for parameter in important_parameters:
-
-        rekam_param = rekam_parameter_map.get(parameter.id)
-
-        if (
-            rekam_param is None or
-            rekam_param.jawaban is None or
-            str(rekam_param.jawaban).strip() == ""
-        ):
-
-            missing_parameters.append({
-                "parameter_id": parameter.id,
-                "parameter_nama": parameter.nama,
-                "kategori": parameter.kategori
-            })
-
-    if missing_parameters:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": "Parameter penting belum lengkap",
-                "missing_parameters": missing_parameters
-            }
-        )
 
 def setujuiIntervensiService(db: Session, rekam_pasien_id: int):
 

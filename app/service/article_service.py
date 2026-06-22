@@ -1,11 +1,81 @@
 from math import ceil
 from datetime import date
+from html.parser import HTMLParser
 
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models import Article,User
 from app.schemas.article_schema import articleCreate, articleUpdate
+from app.utils.helpers.upload import (
+    delete_article_upload,
+    normalize_article_upload_url,
+    resolve_article_upload_path,
+)
+
+
+class _ContentImageParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.sources: set[str] = set()
+
+    def handle_starttag(self, tag, attrs):
+        if tag.casefold() != "img":
+            return
+        source = dict(attrs).get("src")
+        if source:
+            self.sources.add(source)
+
+
+def _article_file_paths(thumbnail_url: str | None, content: str | None) -> set[str]:
+    paths: set[str] = set()
+    normalized_thumbnail = normalize_article_upload_url(thumbnail_url)
+    if normalized_thumbnail:
+        paths.add(normalized_thumbnail)
+
+    parser = _ContentImageParser()
+    parser.feed(content or "")
+    paths.update(
+        normalized_source
+        for source in parser.sources
+        if (normalized_source := normalize_article_upload_url(source))
+    )
+    return paths
+
+
+def _is_file_used_by_other_article(
+    db: Session,
+    file_url: str,
+    excluded_article_id: int,
+) -> bool:
+    target = resolve_article_upload_path(file_url)
+    if target is None:
+        return False
+
+    other_articles = (
+        db.query(Article.thumbnail_url, Article.konten)
+        .filter(
+            Article.id != excluded_article_id,
+            Article.deleted_at.is_(None),
+        )
+        .all()
+    )
+    for thumbnail_url, content in other_articles:
+        for other_url in _article_file_paths(thumbnail_url, content):
+            if resolve_article_upload_path(other_url) == target:
+                return True
+    return False
+
+
+def _delete_unused_article_files(
+    db: Session,
+    article_id: int,
+    old_files: set[str],
+    new_files: set[str],
+) -> None:
+    for file_url in old_files - new_files:
+        if not _is_file_used_by_other_article(db, file_url, article_id):
+            delete_article_upload(file_url)
 
 def get_article_service(
     db: Session,
@@ -70,7 +140,6 @@ def get_article_service(
             "total_pages": total_page
         }
     }
-
 def get_article_admin_service(
     db: Session,
     current_page: int = 1,
@@ -133,7 +202,6 @@ def get_article_admin_service(
             "total_pages": total_page
         }
     }
-
 def get_article_by_id_service(
     db: Session,
     article_id : int
@@ -205,17 +273,22 @@ def update_article_service(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
+    old_files = _article_file_paths(article.thumbnail_url, article.konten)
+
     if payload.judul is not None:
         article.judul = payload.judul
     if payload.konten is not None:
         article.konten = payload.konten
     if payload.is_published is not None:
         article.is_published = payload.is_published
-    if payload.thumbnail_url is not None:
+    if "thumbnail_url" in payload.model_fields_set:
         article.thumbnail_url = payload.thumbnail_url
 
     db.commit()
     db.refresh(article)
+
+    new_files = _article_file_paths(article.thumbnail_url, article.konten)
+    _delete_unused_article_files(db, article.id, old_files, new_files)
 
     user = db.query(User.nama).filter(User.id == article.user_id).first()
     nama_pembuat = user[0] if user else ""
@@ -238,10 +311,13 @@ def delete_article_service(
     article = db.query(Article).filter(Article.id == article_id, Article.deleted_at.is_(None)).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    
+
+    article_files = _article_file_paths(article.thumbnail_url, article.konten)
     article.deleted_at = func.now()
     db.commit()
     db.refresh(article)
+
+    _delete_unused_article_files(db, article.id, article_files, set())
 
     article.nama_pembuat = db.query(User.nama).filter(User.id == article.user_id).first()[0]
 
@@ -256,4 +332,3 @@ def delete_article_service(
             "nama_pembuat": article.nama_pembuat
         }
     }
-    

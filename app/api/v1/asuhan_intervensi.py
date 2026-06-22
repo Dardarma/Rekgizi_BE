@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.params import Depends
-from requests import Session
+from sqlalchemy.orm import Session
 
 from app.api.v1.user_route import get_db
 from app.core.require_role import require_role

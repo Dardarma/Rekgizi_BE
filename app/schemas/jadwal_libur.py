@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, time
 from app.schemas.meta_schema import PaginateSchema
 
 class JadwalLiburBasicInfo(BaseModel):
@@ -11,8 +11,12 @@ class JadwalLiburBasicInfo(BaseModel):
     day_of_week: str
 
 class JadwalLiburCreate(BaseModel):
-    jadwal_tersedia_id: int
-    tanggal: date
+    jadwal_tersedia_id: int | None = None
+    tanggal: date | None = None
+    tanggal_mulai: date | None = None
+    tanggal_selesai: date | None = None
+    start_time: time | None = None
+    end_time: time | None = None
 
 class JadwalLiburDeleted(BaseModel):
     id: int

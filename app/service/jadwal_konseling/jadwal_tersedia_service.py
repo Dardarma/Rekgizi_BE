@@ -163,6 +163,14 @@ def post_jadwal_tersedia_service(
     Session = db or SessionLocal()
 
     try:
+        _ensure_no_overlapping_schedule(
+            Session,
+            jadwal_data.konselor_id,
+            jadwal_data.day_of_week,
+            jadwal_data.start_time,
+            jadwal_data.end_time,
+        )
+
         new_jadwal = JadwalTersedia(
             konselor_id=jadwal_data.konselor_id,
             day_of_week=jadwal_data.day_of_week,
@@ -181,6 +189,9 @@ def post_jadwal_tersedia_service(
             "start_time": new_jadwal.start_time,
             "end_time": new_jadwal.end_time,
         }
+    except HTTPException:
+        Session.rollback()
+        raise
     except Exception as e:
         Session.rollback()
         raise HTTPException(
@@ -206,6 +217,35 @@ def _get_jadwal_tersedia_orm(
     if not jadwal_tersedia:
         raise HTTPException(status_code=404, detail="Jadwal Tersedia not found")
     return jadwal_tersedia
+
+def _ensure_no_overlapping_schedule(
+        Session: Session,
+        konselor_id: int,
+        day_of_week: str,
+        start_time,
+        end_time,
+        exclude_id: int | None = None,
+) -> None:
+    query = Session.query(JadwalTersedia).filter(
+        JadwalTersedia.deleted_at.is_(None),
+        JadwalTersedia.konselor_id == konselor_id,
+        JadwalTersedia.day_of_week == day_of_week,
+        JadwalTersedia.start_time < end_time,
+        JadwalTersedia.end_time > start_time,
+    )
+
+    if exclude_id is not None:
+        query = query.filter(JadwalTersedia.id != exclude_id)
+
+    existing = query.first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Jadwal bentrok dengan {existing.day_of_week} "
+                f"{existing.start_time.strftime('%H:%M')} - {existing.end_time.strftime('%H:%M')}"
+            )
+        )
 
 def get_jadwal_tersedia_by_id_service(
         db: Optional[Session] =None,
@@ -233,6 +273,19 @@ def edit_jadwal_tersedia_service(
 
     
     update_data = new_jadwal_data.model_dump(exclude_unset=True)
+    next_day = update_data.get("day_of_week", jadwal_tersedia.day_of_week)
+    next_start = update_data.get("start_time", jadwal_tersedia.start_time)
+    next_end = update_data.get("end_time", jadwal_tersedia.end_time)
+
+    _ensure_no_overlapping_schedule(
+        Session,
+        jadwal_tersedia.konselor_id,
+        next_day,
+        next_start,
+        next_end,
+        exclude_id=jadwal_tersedia.id,
+    )
+
     for field, value in update_data.items():
         setattr(jadwal_tersedia, field, value)
 

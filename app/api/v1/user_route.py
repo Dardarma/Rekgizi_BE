@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.require_role import require_role
 from app.models.users import RoleEnum
-from app.schemas.userSchema import UserBasicInfo, UserCreate, UserSearchRequest, UserUpdate, userResponseAPI
+from app.schemas.userSchema import UserBasicInfo, UserCreate, UserProfileUpdate, UserSearchRequest, UserUpdate, userResponseAPI
 from app.utils.helpers.respons import APIResponse
 from app.core.database import SessionLocal
 from app.service.user_service import delete_user_service, edit_user_service, get_all_users, get_user_by_id,create_user_service
@@ -17,6 +17,31 @@ def get_db():
 		yield db
 	finally:
 		db.close()
+
+@router.get("/me", response_model=APIResponse[UserBasicInfo], summary="Get current user profile")
+def get_my_profile(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role(RoleEnum.admin, RoleEnum.ahli_gizi, RoleEnum.pasien, RoleEnum.tenaga_kesehatan))
+):
+	user = get_user_by_id(current_user.user_id, db)
+	return APIResponse(
+		status_code=200,
+		message="Success",
+		data=user
+	)
+
+@router.patch("/me", response_model=APIResponse[UserBasicInfo], summary="Update current user profile")
+def update_my_profile(
+	payload: UserProfileUpdate,
+	db: Session = Depends(get_db),
+	current_user = Depends(require_role(RoleEnum.admin, RoleEnum.ahli_gizi, RoleEnum.pasien, RoleEnum.tenaga_kesehatan))
+):
+	user = edit_user_service(current_user.user_id, payload, db)
+	return APIResponse(
+		status_code=200,
+		message="Profile updated successfully",
+		data=user
+	)
 
 @router.get("/", response_model=APIResponse[userResponseAPI], summary="Search Asuhan user")
 def get_asuhan_search(

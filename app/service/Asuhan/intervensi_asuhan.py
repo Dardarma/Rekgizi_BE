@@ -281,12 +281,12 @@ def map_to_features(rekam_pasien):
     return result
 
 MODEL_TO_SEEDER_DIET = {
-    "RP 30": "Diet Ginjal Protein 30 g",
-    "RP 35": "Diet Ginjal Protein 35 g",
-    "RP 40": "Diet Ginjal Protein 40 g",
-    "Dialisa 60": "Diet Ginjal Protein 60 g",
-    "Dialisa 65": "Diet Ginjal Protein 65 g",
-    "Dialisa 70": "Diet Ginjal Protein 70 g",
+    "RP 30": "Diet Ginjal Rendah Protein 30 g",
+    "RP 35": "Diet Ginjal Rendah Protein 35 g",
+    "RP 40": "Diet Ginjal Rendah Protein 40 g",
+    "Dialisa 60": "Diet Ginjal Dialisa Protein 60 g",
+    "Dialisa 65": "Diet Ginjal Dialisa Protein 65 g",
+    "Dialisa 70": "Diet Ginjal Dialisa Protein 70 g",
 }
 
 def get_intervensi_by_recommendation(db, recommendation: str):
@@ -332,10 +332,15 @@ def build_payload_from_intervensi(intervensi: IntervensiInfo):
         "karbohidrat": intervensi.karbohidrat
     }
 
-def setujuiIntervensiService(db: Session, rekam_pasien_id: int):
+def setujuiIntervensiService(
+    db: Session,
+    rekam_pasien_id: int,
+    payload: IntervensiRekamPasienRequest
+):
 
     query = (
         db.query(RekamPasien)
+        .options(joinedload(RekamPasien.pasien))
         .filter(
             RekamPasien.id == rekam_pasien_id,
             RekamPasien.deleted_at.is_(None)
@@ -349,10 +354,31 @@ def setujuiIntervensiService(db: Session, rekam_pasien_id: int):
             detail="Rekam pasien tidak ditemukan"
         )
 
+    query.intervensi_id = payload.intervensi_id
+    query.jenis_diet = payload.jenis_diet
+    query.tujuan_intervensi = payload.tujuan
+    query.edukasi_intervensi = payload.edukasi
+    query.prinsip_intervensi = payload.prinsip
+    query.protein = payload.protein
+    query.energi = payload.energi
+    query.karbohidrat = payload.karbohidrat
     query.status = "disetujui"
 
     db.commit()
+    db.refresh(query)
 
-    return {
-        "message": "Intervensi disetujui"
-    }
+    return RekamPasienBase(
+        id=query.id,
+        pasien_id=query.pasien_id,
+        nama_pasien=query.pasien.nama if query.pasien else None,
+        tanggal_asesmen=query.tanggal_asesmen,
+        status=query.status,
+        intervensi_id=query.intervensi_id,
+        tujuan_intervensi=query.tujuan_intervensi,
+        prinsip_intervensi=query.prinsip_intervensi,
+        edukasi_intervensi=query.edukasi_intervensi,
+        jenis_diet=query.jenis_diet,
+        karbohidrat=query.karbohidrat,
+        protein=query.protein,
+        energi=query.energi
+    )

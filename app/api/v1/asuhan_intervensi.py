@@ -73,13 +73,14 @@ def getPredict(
         data= result
     )
 
-@router.patch("/validasi/{id_rekam_pasien}", response_model=APIResponse, summary='validasi rekam pasien')
+@router.patch("/validasi/{id_rekam_pasien}", response_model=APIRekamPasien, summary='simpan dan validasi rekam pasien')
 def setujuiIntervensi(
     id_rekam_pasien: int,
+    payload: IntervensiRekamPasienRequest,
     db: Session = Depends(get_db),
     _: None = Depends(require_role(RoleEnum.ahli_gizi))
 ):
-    result = setujuiIntervensiService(db,id_rekam_pasien)
+    result = setujuiIntervensiService(db, id_rekam_pasien, payload)
     
     return APIResponse(
         status_code=200,

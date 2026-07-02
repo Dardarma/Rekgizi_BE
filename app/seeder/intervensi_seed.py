@@ -143,7 +143,7 @@ Cara memasak: rebus, kukus, panggang, tumis ringan. Hindari makanan tinggi garam
                 db.add(Intervensi(**item))
 
         db.commit()
-        print("Seeder intervensi berhasil dijalankan ✅")
+        print("Seeder intervensi berhasil dijalankan")
 
     except Exception as e:
         db.rollback()

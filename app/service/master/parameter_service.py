@@ -1,14 +1,20 @@
-from sqlalchemy.orm import Session
-from app.models import Parameter
+from sqlalchemy.orm import Session, joinedload, with_loader_criteria
+from app.models import Parameter, ParameterCalculation, ParameterCalculationSource
 from app.schemas.parameter_schema import parameterCreate, parameterUpdate
 from sqlalchemy import func
 from fastapi import HTTPException
+from app.service.master.parameter_calculation_service import sync_parameter_calculation
 
 def get_parameter_service(
     db: Session,
 ):
     parameter = (
         db.query(Parameter)
+        .options(joinedload(Parameter.calculation).joinedload(ParameterCalculation.sources))
+        .options(
+            with_loader_criteria(ParameterCalculation, ParameterCalculation.deleted_at.is_(None)),
+            with_loader_criteria(ParameterCalculationSource, ParameterCalculationSource.deleted_at.is_(None)),
+        )
         .filter(Parameter.deleted_at.is_(None))
         .all()
     )
@@ -20,6 +26,11 @@ def get_parameter_by_id_service(
     parameter_id: int,
 ):
     parameter = db.query(Parameter)\
+    .options(joinedload(Parameter.calculation).joinedload(ParameterCalculation.sources))\
+    .options(
+        with_loader_criteria(ParameterCalculation, ParameterCalculation.deleted_at.is_(None)),
+        with_loader_criteria(ParameterCalculationSource, ParameterCalculationSource.deleted_at.is_(None)),
+    )\
     .filter(Parameter.id == parameter_id
     ).filter(Parameter.deleted_at.is_(None)
     ).first()
@@ -40,6 +51,8 @@ def create_parameter_service(
     )
 
     db.add(new_parameter)
+    db.flush()
+    sync_parameter_calculation(db, new_parameter.id, payload.calculation)
     db.commit()
     db.refresh(new_parameter)
 
@@ -54,11 +67,19 @@ def updated_parameter_service(
     if not parameter:
         raise HTTPException(status_code=404, detail="Parameter not found")
     
-    parameter.nama = payload.nama
-    parameter.kategori = payload.kategori
-    parameter.tipe_input = payload.tipe_input
-    parameter.satuan = payload.satuan
-    parameter.important = payload.important
+    if payload.nama is not None:
+        parameter.nama = payload.nama
+    if payload.kategori is not None:
+        parameter.kategori = payload.kategori
+    if payload.tipe_input is not None:
+        parameter.tipe_input = payload.tipe_input
+    if payload.satuan is not None:
+        parameter.satuan = payload.satuan
+    if payload.important is not None:
+        parameter.important = payload.important
+
+    if "calculation" in payload.model_fields_set:
+        sync_parameter_calculation(db, parameter.id, payload.calculation)
 
     db.commit()
     db.refresh(parameter)
@@ -72,6 +93,7 @@ def delete_parameter_service(
     parameter = db.query(Parameter).filter(Parameter.id == parameter_id).first()
     
     parameter.deleted_at = func.now()
+    sync_parameter_calculation(db, parameter.id, None)
     db.commit()
 
     return parameter

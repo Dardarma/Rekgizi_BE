@@ -31,3 +31,9 @@ class Parameter(Base):
     rekam_pasien_parameter = relationship(
         "RekamPasienParameter", back_populates="parameter", cascade="all, delete-orphan"
     )
+    calculation = relationship(
+        "ParameterCalculation",
+        back_populates="target_parameter",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

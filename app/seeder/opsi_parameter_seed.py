@@ -49,7 +49,7 @@ def seed_opsi_parameter():
                     ))
 
         db.commit()
-        print("Seeder opsi parameter berhasil dijalankan ✅")
+        print("Seeder opsi parameter berhasil dijalankan")
 
     except Exception as e:
         db.rollback()

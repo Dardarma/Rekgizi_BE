@@ -65,7 +65,7 @@ def seed_article():
                 db.add(Article(**item))
 
         db.commit()
-        print("Seeder article PGK berhasil dijalankan ✅")
+        print("Seeder article PGK berhasil dijalankan")
 
     except Exception as e:
         db.rollback()

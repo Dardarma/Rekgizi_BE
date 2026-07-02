@@ -201,6 +201,27 @@ CREATE TABLE IF NOT EXISTS rekam_pasien_parameter (
     deleted_at TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS parameter_calculation (
+    id SERIAL PRIMARY KEY,
+    target_parameter_id INTEGER NOT NULL UNIQUE REFERENCES parameter(id),
+    formula TEXT NOT NULL,
+    rounding INTEGER DEFAULT 2,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS parameter_calculation_source (
+    id SERIAL PRIMARY KEY,
+    calculation_id INTEGER NOT NULL REFERENCES parameter_calculation(id) ON DELETE CASCADE,
+    source_parameter_id INTEGER NOT NULL REFERENCES parameter(id),
+    variable_name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
+
 CREATE TABLE IF NOT EXISTS diagnosa_pasien (
     id SERIAL PRIMARY KEY,
     id_rekam_pasien INTEGER NOT NULL REFERENCES rekam_pasien(id),
@@ -224,6 +245,15 @@ CREATE INDEX IF NOT EXISTS ix_articles_id ON articles(id);
 CREATE INDEX IF NOT EXISTS ix_diagnosa_pasien_id ON diagnosa_pasien(id);
 CREATE INDEX IF NOT EXISTS ix_intervensi_id ON intervensi(id);
 CREATE INDEX IF NOT EXISTS ix_jadwal_konseling_id ON jadwal_konseling(id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_jadwal_konseling_pasien_slot_active
+    ON jadwal_konseling (
+        pasien_id,
+        konselor_id,
+        jadwal_tersedia_id,
+        tanggal_konseling
+    )
+    WHERE deleted_at IS NULL
+      AND status IN ('pending', 'approved');
 CREATE INDEX IF NOT EXISTS ix_jadwal_libur_id ON jadwal_libur(id);
 CREATE INDEX IF NOT EXISTS ix_jadwal_tersedia_id ON jadwal_tersedia(id);
 CREATE INDEX IF NOT EXISTS ix_jadwal_tersedia_konselor_id
@@ -234,4 +264,10 @@ CREATE INDEX IF NOT EXISTS ix_notification_tokens_user_id
     ON notification_tokens(user_id);
 CREATE INDEX IF NOT EXISTS ix_opsi_parameter_id ON opsi_parameter(id);
 CREATE INDEX IF NOT EXISTS ix_parameter_id ON parameter(id);
+CREATE INDEX IF NOT EXISTS ix_parameter_calculation_target_parameter_id
+    ON parameter_calculation(target_parameter_id);
+CREATE INDEX IF NOT EXISTS ix_parameter_calculation_source_calculation_id
+    ON parameter_calculation_source(calculation_id);
+CREATE INDEX IF NOT EXISTS ix_parameter_calculation_source_source_parameter_id
+    ON parameter_calculation_source(source_parameter_id);
 CREATE INDEX IF NOT EXISTS ix_rekam_pasien_id ON rekam_pasien(id);

@@ -199,6 +199,7 @@ def edit_user_service(
 		"jenis_kelamin" : user.jenis_kelamin,
 		"alamat" : user.alamat,
 		"tanggal_lahir" : user.tanggal_lahir,
+		"email" : user.email,
 	}
 
 def delete_user_service(

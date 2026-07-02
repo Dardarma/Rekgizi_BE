@@ -43,7 +43,7 @@ def seed_diagnosa():
                 db.add(Diagnosa(**item))
 
         db.commit()
-        print("Seeder diagnosa berhasil dijalankan ✅")
+        print("Seeder diagnosa berhasil dijalankan")
 
     except Exception as e:
         db.rollback()

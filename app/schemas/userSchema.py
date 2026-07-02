@@ -71,6 +71,13 @@ class UserUpdate(OptionalPasswordConfirmationMixin):
     email: Optional[EmailStr] = None
     tanggal_lahir: Optional[date] = None
 
+class UserProfileUpdate(OptionalPasswordConfirmationMixin):
+    nama: Optional[str] = None
+    jenis_kelamin: Optional[KelaminEnum] = None
+    alamat: Optional[Alamat] = None
+    email: Optional[EmailStr] = None
+    tanggal_lahir: Optional[date] = None
+
 class userResponseAPI(BaseModel):
     meta: PaginateSchema
     data: list[UserBasicInfo]

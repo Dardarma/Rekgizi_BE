@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, aliased
 
 from app.core.database import SessionLocal
 from app.models import JadwalKonseling, User, JadwalTersedia
+from app.models.jadwal_konseling import statusEnum
 from app.schemas.jadwal_schema import jadwalKonselingCreate, jadwalKonselingUpdate
 from app.service.notification_service import send_jadwal_konseling_notification
 
@@ -157,6 +158,25 @@ def create_jadwal_konseling_service(
     payload: jadwalKonselingCreate,
     pasien_id: int,
 ):
+    existing_jadwal = (
+        db.query(JadwalKonseling)
+        .filter(
+            JadwalKonseling.deleted_at.is_(None),
+            JadwalKonseling.pasien_id == pasien_id,
+            JadwalKonseling.konselor_id == payload.konselor_id,
+            JadwalKonseling.jadwal_tersedia_id == payload.jadwal_tersedia_id,
+            JadwalKonseling.tanggal_konseling == payload.tanggal_konseling,
+            JadwalKonseling.status.in_([statusEnum.pending, statusEnum.approved]),
+        )
+        .first()
+    )
+
+    if existing_jadwal:
+        raise HTTPException(
+            status_code=409,
+            detail="Anda sudah mengajukan jadwal konsultasi untuk konselor, tanggal, dan jam yang sama",
+        )
+
     new_jadwal_konseling = JadwalKonseling(
         pasien_id=pasien_id,
         konselor_id=payload.konselor_id,

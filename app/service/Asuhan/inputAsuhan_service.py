@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.models import Parameter, RekamPasienParameter
 from app.models.diagnosa_pasien import DiagnosaPasien
 from app.models.opsi_parameter import OpsiParameter
+from app.models.parameter_calculation import ParameterCalculation, ParameterCalculationSource
+from app.service.master.parameter_calculation_service import calculate_rekam_pasien_parameters
 import numpy as np
 
 def get_parameter_input_service(
@@ -15,9 +17,18 @@ def get_parameter_input_service(
         db.query(Parameter)
         .options(
             joinedload(Parameter.opsi_parameter),
+            joinedload(Parameter.calculation).joinedload(ParameterCalculation.sources),
             with_loader_criteria(
                 OpsiParameter,
                 OpsiParameter.deleted_at.is_(None)
+            ),
+            with_loader_criteria(
+                ParameterCalculation,
+                ParameterCalculation.deleted_at.is_(None)
+            ),
+            with_loader_criteria(
+                ParameterCalculationSource,
+                ParameterCalculationSource.deleted_at.is_(None)
             )
         )
         .filter(Parameter.deleted_at.is_(None)).all()
@@ -61,6 +72,7 @@ def saveParameterPasien(
                 opsi_parameter_id=item.opsi_parameter_id
             ))
 
+    calculate_rekam_pasien_parameters(db, rekam_pasien_id)
     db.commit()
     return items
 

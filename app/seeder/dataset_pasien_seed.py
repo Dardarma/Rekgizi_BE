@@ -29,7 +29,23 @@ from app.models.users import KelaminEnum, RoleEnum, User
 
 SOURCE_FILE = Path(__file__).resolve().parent / "data" / "data_riwayat_fisik_diagnosis.csv"
 EXPECTED_COLUMN_COUNT = 39
-ASSUMED_AGE = 45
+DATASET_BIRTH_DATES = (
+    date(1998, 2, 14),
+    date(1993, 7, 21),
+    date(1988, 12, 5),
+    date(1984, 4, 9),
+    date(1981, 10, 17),
+    date(1978, 6, 28),
+    date(1975, 1, 11),
+    date(1972, 8, 23),
+    date(1969, 5, 19),
+    date(1964, 3, 7),
+    date(1961, 9, 30),
+    date(1958, 12, 16),
+    date(1953, 4, 22),
+    date(1948, 11, 3),
+    date(1942, 7, 15),
+)
 BASE_ASSESSMENT_DATE = datetime(2026, 6, 1, 8, 0, 0)
 DEFAULT_PASSWORD = "password"
 EMAIL_TEMPLATE = "pasien.dataset.{source_id:03d}@example.com"
@@ -178,13 +194,8 @@ def parse_diagnosis_codes(value: str | None) -> list[str]:
     return list(dict.fromkeys(normalize_diagnosis_code(item) for item in value.split(",")))
 
 
-def assumed_birth_date(source_id: int) -> date:
-    assessment_date = (BASE_ASSESSMENT_DATE + timedelta(days=source_id - 1)).date()
-    return date(
-        assessment_date.year - ASSUMED_AGE,
-        assessment_date.month,
-        assessment_date.day,
-    )
+def dataset_birth_date(source_id: int) -> date:
+    return DATASET_BIRTH_DATES[(source_id - 1) % len(DATASET_BIRTH_DATES)]
 
 
 def ensure_user(db: Session, source_id: int, password_hash: str) -> tuple[User, bool]:
@@ -193,6 +204,7 @@ def ensure_user(db: Session, source_id: int, password_hash: str) -> tuple[User, 
     if user is not None:
         if user.deleted_at is not None:
             user.deleted_at = None
+        user.tanggal_lahir = dataset_birth_date(source_id)
         return user, False
 
     legacy_email = LEGACY_EMAIL_TEMPLATE.format(source_id=source_id)
@@ -201,6 +213,7 @@ def ensure_user(db: Session, source_id: int, password_hash: str) -> tuple[User, 
         user.email = email
         if user.deleted_at is not None:
             user.deleted_at = None
+        user.tanggal_lahir = dataset_birth_date(source_id)
         return user, False
 
     user = User(
@@ -214,7 +227,7 @@ def ensure_user(db: Session, source_id: int, password_hash: str) -> tuple[User, 
             "provinsi": "Data simulasi",
             "lengkap": "Alamat asumsi untuk data seeder",
         },
-        tanggal_lahir=assumed_birth_date(source_id),
+        tanggal_lahir=dataset_birth_date(source_id),
         email=email,
         pass_hash=password_hash,
     )
@@ -420,7 +433,7 @@ def seed_dataset_pasien() -> None:
             f"diagnosis baru={counters['diagnoses']}."
         )
         print(
-            f"Usia yang tidak tersedia diasumsikan {ASSUMED_AGE} tahun; "
+            "Tanggal lahir pasien dataset dibuat bervariasi sesuai kelompok usia; "
             "nilai null tidak dibuat sebagai rekam_pasien_parameter."
         )
     except Exception:

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
+from app.models.parameter_calculation import ParameterCalculation, ParameterCalculationSource
 from app.models.parameter import Parameter, TipeInputEnum
 
 
@@ -75,9 +76,46 @@ def seed_parameter():
             else:
                 db.add(item)
 
+        db.flush()
+
+        tinggi = db.query(Parameter).filter_by(nama="Tinggi badan", kategori="antropometri").first()
+        berat = db.query(Parameter).filter_by(nama="Berat badan", kategori="antropometri").first()
+        imt = db.query(Parameter).filter_by(nama="IMT", kategori="antropometri").first()
+
+        if tinggi and berat and imt:
+            calculation = db.query(ParameterCalculation).filter_by(target_parameter_id=imt.id).first()
+            if not calculation:
+                calculation = ParameterCalculation(
+                    target_parameter_id=imt.id,
+                    formula="berat / ((tinggi / 100) * (tinggi / 100))",
+                    rounding=2,
+                    is_active=True,
+                )
+                db.add(calculation)
+                db.flush()
+            else:
+                calculation.formula = "berat / ((tinggi / 100) * (tinggi / 100))"
+                calculation.rounding = 2
+                calculation.is_active = True
+                calculation.deleted_at = None
+                db.query(ParameterCalculationSource).filter_by(calculation_id=calculation.id).delete()
+
+            db.add_all([
+                ParameterCalculationSource(
+                    calculation_id=calculation.id,
+                    source_parameter_id=berat.id,
+                    variable_name="berat",
+                ),
+                ParameterCalculationSource(
+                    calculation_id=calculation.id,
+                    source_parameter_id=tinggi.id,
+                    variable_name="tinggi",
+                ),
+            ])
+
         db.commit()
 
-        print("Seeder parameter berhasil dijalankan ✅")
+        print("Seeder parameter berhasil dijalankan")
 
     except Exception as e:
         db.rollback()

@@ -33,13 +33,13 @@ def get_jadwal_libur(
     )
 
 
-@router.post("/", response_model=APIResponse[JadwalLiburBasicInfo], summary="Create jadwal libur")
+@router.post("/", response_model=APIResponse[List[JadwalLiburBasicInfo]], summary="Create jadwal libur")
 def create_jadwal_libur(
     payload: JadwalLiburCreate,
     db: Session = Depends(get_db),
-    _: None = Depends(require_role(RoleEnum.ahli_gizi))
+    state = Depends(require_role(RoleEnum.ahli_gizi))
 ):
-    create_jadwal_libur = create_jadwal_libur_service(db,payload)
+    create_jadwal_libur = create_jadwal_libur_service(db, payload, state.user_id)
 
     return APIResponse(
         status_code=201,

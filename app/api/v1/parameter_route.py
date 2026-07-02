@@ -5,7 +5,7 @@ from typing import List
 from app.api.v1.user_route import get_db
 from app.core.require_role import require_role
 from app.models.users import RoleEnum
-from app.schemas.parameter_schema import parameterBaseInfo, parameterCreate
+from app.schemas.parameter_schema import parameterBaseInfo, parameterCreate, parameterUpdate
 from app.service.master.parameter_service import create_parameter_service, delete_parameter_service, get_parameter_by_id_service, get_parameter_service, updated_parameter_service
 from app.utils.helpers.respons import APIResponse
 
@@ -55,7 +55,7 @@ def create_parameter(
 @router.patch("/{parameter_id}", response_model=APIResponse[parameterBaseInfo], summary="Update parameter by ID")
 def update_parameter(
     parameter_id: int,
-    payload: parameterCreate,
+    payload: parameterUpdate,
     db: Session = Depends(get_db),
     _: None = Depends(require_role(RoleEnum.ahli_gizi))
 ):
